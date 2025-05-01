@@ -41,14 +41,18 @@ pub struct InitializeOrderbook<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(context: Context<InitializeOrderbook>) -> Result<()> {
-    context.accounts.order_book.set_inner(Orderbook { base_asset: context.accounts.base_token_mint.key(), 
+pub fn init_orderbook(context: Context<InitializeOrderbook>) -> Result<()> {
+    context.accounts.order_book.set_inner(Orderbook { 
+        base_asset: context.accounts.base_token_mint.key(), 
         quote_asset: context.accounts.quote_token_mint.key(), 
         base_vault: context.accounts.base_vault.key(), 
         quote_vault: context.accounts.quote_vault.key(), 
         base_decimals: context.accounts.base_token_mint.decimals, 
         quote_decimals: context.accounts.quote_token_mint.decimals, 
+        bids: Vec::new(),
+        asks: Vec::new(),  
         authority: context.accounts.payer.key(), 
+        order_counter: 0,
         bump: context.bumps.order_book 
     });
     Ok(())

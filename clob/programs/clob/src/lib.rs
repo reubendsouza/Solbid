@@ -16,7 +16,11 @@ pub mod clob {
     use super::*;
 
     pub fn initialize_orderbook(ctx: Context<InitializeOrderbook>) -> Result<()> {
-        initialize_orderbook::handler(ctx)
+        initialize_orderbook::init_orderbook(ctx)
+    }
+
+    pub fn create_order(ctx: Context<CreateOrder>, side: u8, quantity: u64, price: u64) -> Result<()> {
+        create_order::handle_create_order(ctx, side, quantity, price)
     }
 
 }
