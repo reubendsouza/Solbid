@@ -117,14 +117,14 @@ export type CreateOrderInstruction<
 export type CreateOrderInstructionData = {
   discriminator: ReadonlyUint8Array;
   side: number;
-  quantity: bigint;
   price: bigint;
+  amount: bigint;
 };
 
 export type CreateOrderInstructionDataArgs = {
   side: number;
-  quantity: number | bigint;
   price: number | bigint;
+  amount: number | bigint;
 };
 
 export function getCreateOrderInstructionDataEncoder(): Encoder<CreateOrderInstructionDataArgs> {
@@ -132,8 +132,8 @@ export function getCreateOrderInstructionDataEncoder(): Encoder<CreateOrderInstr
     getStructEncoder([
       ['discriminator', fixEncoderSize(getBytesEncoder(), 8)],
       ['side', getU8Encoder()],
-      ['quantity', getU64Encoder()],
       ['price', getU64Encoder()],
+      ['amount', getU64Encoder()],
     ]),
     (value) => ({ ...value, discriminator: CREATE_ORDER_DISCRIMINATOR })
   );
@@ -143,8 +143,8 @@ export function getCreateOrderInstructionDataDecoder(): Decoder<CreateOrderInstr
   return getStructDecoder([
     ['discriminator', fixDecoderSize(getBytesDecoder(), 8)],
     ['side', getU8Decoder()],
-    ['quantity', getU64Decoder()],
     ['price', getU64Decoder()],
+    ['amount', getU64Decoder()],
   ]);
 }
 
@@ -183,8 +183,8 @@ export type CreateOrderAsyncInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   side: CreateOrderInstructionDataArgs['side'];
-  quantity: CreateOrderInstructionDataArgs['quantity'];
   price: CreateOrderInstructionDataArgs['price'];
+  amount: CreateOrderInstructionDataArgs['amount'];
 };
 
 export async function getCreateOrderInstructionAsync<
@@ -400,8 +400,8 @@ export type CreateOrderInput<
   tokenProgram?: Address<TAccountTokenProgram>;
   systemProgram?: Address<TAccountSystemProgram>;
   side: CreateOrderInstructionDataArgs['side'];
-  quantity: CreateOrderInstructionDataArgs['quantity'];
   price: CreateOrderInstructionDataArgs['price'];
+  amount: CreateOrderInstructionDataArgs['amount'];
 };
 
 export function getCreateOrderInstruction<

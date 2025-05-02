@@ -9,9 +9,9 @@ pub struct Orderbook {
     pub quote_vault: Pubkey,
     pub base_decimals: u8,
     pub quote_decimals: u8,
-    #[max_len(100)]
+    #[max_len(10, Order)]
     pub bids: Vec<Order>,
-    #[max_len(100)]
+    #[max_len(10, Order)]
     pub asks: Vec<Order>,
     pub authority: Pubkey,
     pub order_counter: u64,
@@ -19,6 +19,8 @@ pub struct Orderbook {
 }
 
 impl Orderbook {
+    pub const MAX_ORDERS: usize = 100;
+
     pub fn next_order_id(&mut self) -> u64 {
         let id = self.order_counter;
         self.order_counter += 1;

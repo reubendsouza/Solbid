@@ -19,8 +19,8 @@ pub mod clob {
         initialize_orderbook::init_orderbook(ctx)
     }
 
-    pub fn create_order(ctx: Context<CreateOrder>, side: u8, quantity: u64, price: u64) -> Result<()> {
-        create_order::handle_create_order(ctx, side, quantity, price)
+    pub fn create_order(ctx: Context<CreateOrder>, side: u8, price: u64, amount: u64) -> Result<()> {
+        create_order::handle_create_order(ctx, side, price, amount)
     }
 
 }

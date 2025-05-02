@@ -78,7 +78,7 @@ pub fn handle_create_order(context: Context<CreateOrder>, side: u8, price: u64, 
     
     // Create the new order
     let order_id = order_book.next_order_id();
-    let _new_order = Order {
+    let new_order = Order {
         id: order_id,
         owner: user.key(),
         side: side_enum,
@@ -104,21 +104,25 @@ pub fn handle_create_order(context: Context<CreateOrder>, side: u8, price: u64, 
                 &context.accounts.token_program,
                 None
             )?;
+            if order_book.bids.len() >= Orderbook::MAX_ORDERS {
+                return err!(ErrorCode::OrderbookFull);
+            }
+            order_book.bids.push(new_order);
         },
         Side::Sell => {
-            // For sell orders, transfer base tokens
-            let base_amount = price.checked_mul(amount)
-                .ok_or(ErrorCode::CalculationFailure)?;
-
             transfer_tokens(
                 &context.accounts.user_base_account,
                 &context.accounts.base_vault,
-                &base_amount,
+                &amount,
                 &context.accounts.base_token_mint,
                 &context.accounts.user.to_account_info(),
                 &context.accounts.token_program,
                 None
             )?;
+            if order_book.asks.len() >= Orderbook::MAX_ORDERS {
+                return err!(ErrorCode::OrderbookFull);
+            }
+            order_book.asks.push(new_order);
         }
     }
 
