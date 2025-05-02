@@ -22,4 +22,7 @@ pub enum ErrorCode {
 
     #[msg("Invalid order side")]
     InvalidOrderSide,
+
+    #[msg("Not order owner")]
+    NotOrderOwner,
 }
