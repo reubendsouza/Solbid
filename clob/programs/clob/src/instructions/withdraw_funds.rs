@@ -68,6 +68,9 @@ pub fn handle_withdraw_funds(
     // Check if the user has sufficient balance
     let (user_base_balance, user_quote_balance) = order_book.get_balance(&user.key());
     
+    msg!("user_base_balance: {}", user_base_balance);
+    msg!("user_quote_balance: {}", user_quote_balance);
+    
     require!(
         user_base_balance >= base_amount && user_quote_balance >= quote_amount,
         ErrorCode::InsufficientBalance

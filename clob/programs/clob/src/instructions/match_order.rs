@@ -70,18 +70,36 @@ pub fn handle_match_order(
     let order_book = &mut context.accounts.order_book;
     let user = &context.accounts.user;
     
+    msg!("Searching for order ID: {}", order_id);
+
+    // Log the orderbook state before matching
+    msg!("Orderbook state before matching:");
+    msg!("Number of buys: {}", order_book.buys.len());
+    for (i, bid) in order_book.buys.iter().enumerate() {
+        msg!("Bid #{}: ID: {}, Price: {}, Remaining: {}, Owner: {}", 
+            i, bid.id, bid.price, bid.remaining_amount, bid.owner);
+    }
+    
+    msg!("Number of sells: {}", order_book.sells.len());
+    for (i, ask) in order_book.sells.iter().enumerate() {
+        msg!("Ask #{}: ID: {}, Price: {}, Remaining: {}, Owner: {}", 
+            i, ask.id, ask.price, ask.remaining_amount, ask.owner);
+    }
+    
+    // Log user balances in the orderbook
+    msg!("User balances before matching:");
+    for (i, balance) in order_book.user_balances.iter().enumerate() {
+        msg!("Balance #{}: User: {}, Base: {}, Quote: {}", 
+            i, balance.owner, balance.base_amount, balance.quote_amount);
+    }
+    
     // Find the order by ID
     let mut order_index = None;
     let mut order_side = None;
-    
-    // Add debug logging to help identify the issue
-    msg!("Searching for order ID: {}", order_id);
-    msg!("Number of buys: {}", order_book.buys.len());
-    msg!("Number of sells: {}", order_book.sells.len());
-    
+
     // Search in buys
     for (i, bid) in order_book.buys.iter().enumerate() {
-        msg!("Bid ID: {}", bid.id);
+        msg!("Bid ID iter id: {}", bid.id);
         if bid.id == order_id {
             if bid.owner != user.key() {
                 return err!(ErrorCode::NotOrderOwner);
@@ -183,27 +201,18 @@ pub fn handle_match_order(
                         let quote_amount = match_amount.checked_mul(ask.price)
                             .ok_or(ErrorCode::CalculationFailure)?;
                             
-                    
-                         // Transfer quote tokens from buyer (taker) to vault
-                        transfer_tokens(
-                            &context.accounts.user_quote_account,
-                            &context.accounts.quote_vault,
-                            &quote_amount,
-                            &context.accounts.quote_token_mint,
-                            &context.accounts.user.to_account_info(),
-                            &context.accounts.token_program,
-                            None,
-                        )?;
 
                         // Remove filled orders
-                        if ask.remaining_amount == 0 {
+                        let remaining_amount = ask.remaining_amount;
+
+                        // Instead of direct transfer, update the seller's balance
+                        order_book.add_balance(ask_owner, 0, quote_amount)?;
+                        
+                        if remaining_amount == 0 {
                             order_book.sells.remove(i);
                             // Don't increment i since we removed an element
                             continue;
                         }
-
-                        // Instead of direct transfer, update the seller's balance
-                        order_book.add_balance(ask_owner, 0, quote_amount)?;
                     }
                 } else {
                     // No more matching orders (price too high)
@@ -251,27 +260,17 @@ pub fn handle_match_order(
                             &context.accounts.token_program,
                             signers_seeds,
                         )?;
-                        
-                        // Transfer base tokens from seller (taker) to vault
-                        transfer_tokens(
-                            &context.accounts.user_base_account,
-                            &context.accounts.base_vault,
-                            &match_amount,
-                            &context.accounts.base_token_mint,
-                            &context.accounts.user.to_account_info(),
-                            &context.accounts.token_program,
-                            None,
-                        )?;
-
 
                         // Remove filled orders
-                        if bid.remaining_amount == 0 {
+                        let remaining_amount = bid.remaining_amount;
+
+                        order_book.add_balance(bid_owner, match_amount, 0)?;
+
+                        if remaining_amount == 0 {
                             order_book.buys.remove(i);
                             // Don't increment i since we removed an element
                             continue;
                         }
-
-                        order_book.add_balance(bid_owner, match_amount, 0)?;
                     }
                 } else {
                     // No more matching orders (price too low)
@@ -302,6 +301,8 @@ pub fn handle_match_order(
             }
         }
     }
+
+    
     
     // Log the orderbook state after matching
     msg!("Orderbook state after matching:");
@@ -315,6 +316,13 @@ pub fn handle_match_order(
     for (i, ask) in order_book.sells.iter().enumerate() {
         msg!("Ask #{}: ID: {}, Price: {}, Remaining: {}, Owner: {}", 
             i, ask.id, ask.price, ask.remaining_amount, ask.owner);
+    }
+    
+    // Log user balances after matching
+    msg!("User balances after matching:");
+    for (i, balance) in order_book.user_balances.iter().enumerate() {
+        msg!("Balance #{}: User: {}, Base: {}, Quote: {}", 
+            i, balance.owner, balance.base_amount, balance.quote_amount);
     }
     
     Ok(())

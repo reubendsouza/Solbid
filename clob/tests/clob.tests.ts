@@ -48,6 +48,7 @@ enum ErrorCode {
   OrderNotFound = 6004,
   OrderbookFull = 6005,
   InvalidOrderSide = 6006,
+  InsufficientBalance = 6010,
 }
 
 // Helper function to check for specific program errors
@@ -177,205 +178,205 @@ describe("CLOB", () => {
   
   });
 
-  // describe("initializeOrderbook", () => {
-  //   test("successfully initializes an orderbook", async () => {
-  //     const { orderbook, baseVault, quoteVault, signature } = await initializeOrderbook({
-  //       connection,
-  //       user,
-  //       tokenMintA,
-  //       tokenMintB,
-  //     });
+  describe("initializeOrderbook", () => {
+    test("successfully initializes an orderbook", async () => {
+      const { orderbook, baseVault, quoteVault, signature } = await initializeOrderbook({
+        connection,
+        user,
+        tokenMintA,
+        tokenMintB,
+      });
 
-  //     assert(signature);
-  //     assert(orderbook);
-  //     assert(baseVault);
-  //     assert(quoteVault);
-  //   });
-  // });
+      assert(signature);
+      assert(orderbook);
+      assert(baseVault);
+      assert(quoteVault);
+    });
+  });
 
-  // describe("createOrder", () => {
-  //   let orderbook: Address;
-  //   let baseVault: Address;
-  //   let quoteVault: Address;
+  describe("createOrder", () => {
+    let orderbook: Address;
+    let baseVault: Address;
+    let quoteVault: Address;
 
-  //   before(async () => {
-  //     const result = await initializeOrderbook({
-  //       connection,
-  //       user,
-  //       tokenMintA,
-  //       tokenMintB,
-  //     });
+    before(async () => {
+      const result = await initializeOrderbook({
+        connection,
+        user,
+        tokenMintA,
+        tokenMintB,
+      });
 
-  //     orderbook = result.orderbook;
-  //     baseVault = result.baseVault;
-  //     quoteVault = result.quoteVault;
-  //   });
+      orderbook = result.orderbook;
+      baseVault = result.baseVault;
+      quoteVault = result.quoteVault;
+    });
 
-  //   test("successfully creates a buy order", async () => {
-  //     const price = 1n;
-  //     const quantity = 2n * TOKEN;
-  //     // Side 0 = Buy
-  //     const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //       user: alice,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: aliceTokenAccountA,
-  //       userQuoteAccount: aliceTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       side: 0,
-  //       price: price,
-  //       amount: quantity,
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
-  //     const signature = await connection.sendTransactionFromInstructions({
-  //       feePayer: alice,
-  //       instructions: [createOrderInstruction],
-  //     });
-  //     // Verify tokens were transferred to the vault
-  //     const quoteVaultBalance = await connection.getTokenAccountBalance({
-  //       tokenAccount: quoteVault,
-  //       mint: tokenMintB,
-  //       useTokenExtensions: true,
-  //     });
-  //     // For a buy order, price * quantity tokens should be in the quote vault
-  //     const expectedAmount = price * quantity;
-  //     assert.equal(quoteVaultBalance.amount.toString(), expectedAmount.toString());
-  //   });
+    test("successfully creates a buy order", async () => {
+      const price = 1n;
+      const quantity = 2n * TOKEN;
+      // Side 0 = Buy
+      const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+        user: alice,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: aliceTokenAccountA,
+        userQuoteAccount: aliceTokenAccountB,
+        baseVault,
+        quoteVault,
+        side: 0,
+        price: price,
+        amount: quantity,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
+      const signature = await connection.sendTransactionFromInstructions({
+        feePayer: alice,
+        instructions: [createOrderInstruction],
+      });
+      // Verify tokens were transferred to the vault
+      const quoteVaultBalance = await connection.getTokenAccountBalance({
+        tokenAccount: quoteVault,
+        mint: tokenMintB,
+        useTokenExtensions: true,
+      });
+      // For a buy order, price * quantity tokens should be in the quote vault
+      const expectedAmount = price * quantity;
+      assert.equal(quoteVaultBalance.amount.toString(), expectedAmount.toString());
+    });
 
-  //   test("successfully creates a sell order", async () => {
-  //     const price = 1n * TOKEN;
-  //     const quantity = 2n * TOKEN;
+    test("successfully creates a sell order", async () => {
+      const price = 1n * TOKEN;
+      const quantity = 2n * TOKEN;
       
-  //     // Side 1 = Sell
-  //     const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //       user: bob,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: bobTokenAccountA,
-  //       userQuoteAccount: bobTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       side: 1,
-  //       price,
-  //       amount: quantity,
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+      // Side 1 = Sell
+      const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+        user: bob,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: bobTokenAccountA,
+        userQuoteAccount: bobTokenAccountB,
+        baseVault,
+        quoteVault,
+        side: 1,
+        price,
+        amount: quantity,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-  //     const signature = await connection.sendTransactionFromInstructions({
-  //       feePayer: bob,
-  //       instructions: [createOrderInstruction],
-  //     });
+      const signature = await connection.sendTransactionFromInstructions({
+        feePayer: bob,
+        instructions: [createOrderInstruction],
+      });
 
-  //     // Verify tokens were transferred to the vault
-  //     const baseVaultBalance = await connection.getTokenAccountBalance({
-  //       tokenAccount: baseVault,
-  //       mint: tokenMintA,
-  //       useTokenExtensions: true,
-  //     });
+      // Verify tokens were transferred to the vault
+      const baseVaultBalance = await connection.getTokenAccountBalance({
+        tokenAccount: baseVault,
+        mint: tokenMintA,
+        useTokenExtensions: true,
+      });
       
-  //     // For a sell order, quantity tokens should be in the base vault
-  //     const vaultAmount = typeof baseVaultBalance.amount === 'string' 
-  //       ? BigInt(baseVaultBalance.amount) 
-  //       : BigInt(baseVaultBalance.amount.toString());
-  //     assert(vaultAmount >= quantity);
-  //   });
+      // For a sell order, quantity tokens should be in the base vault
+      const vaultAmount = typeof baseVaultBalance.amount === 'string' 
+        ? BigInt(baseVaultBalance.amount) 
+        : BigInt(baseVaultBalance.amount.toString());
+      assert(vaultAmount >= quantity);
+    });
 
-  //   test("fails when creating an order with zero price", async () => {
-  //     const price = 0n;
-  //     const quantity = 1n * TOKEN;
+    test("fails when creating an order with zero price", async () => {
+      const price = 0n;
+      const quantity = 1n * TOKEN;
       
-  //     try {
-  //       const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //         user: alice,
-  //         baseTokenMint: tokenMintA,
-  //         quoteTokenMint: tokenMintB,
-  //         orderBook: orderbook,
-  //         userBaseAccount: aliceTokenAccountA,
-  //         userQuoteAccount: aliceTokenAccountB,
-  //         baseVault,
-  //         quoteVault,
-  //         side: 0,
-  //         price,
-  //         amount: quantity,
-  //         tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //       });
+      try {
+        const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+          user: alice,
+          baseTokenMint: tokenMintA,
+          quoteTokenMint: tokenMintB,
+          orderBook: orderbook,
+          userBaseAccount: aliceTokenAccountA,
+          userQuoteAccount: aliceTokenAccountB,
+          baseVault,
+          quoteVault,
+          side: 0,
+          price,
+          amount: quantity,
+          tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+        });
 
-  //       await connection.sendTransactionFromInstructions({
-  //         feePayer: alice,
-  //         instructions: [createOrderInstruction],
-  //       });
-  //       assert.fail("Expected the order creation to fail but it succeeded");
-  //     } catch (thrownObject) {
-  //       const error = thrownObject as Error;
-  //       assertProgramError(error, ErrorCode.InvalidOrderPrice);
-  //     }
-  //   });
+        await connection.sendTransactionFromInstructions({
+          feePayer: alice,
+          instructions: [createOrderInstruction],
+        });
+        assert.fail("Expected the order creation to fail but it succeeded");
+      } catch (thrownObject) {
+        const error = thrownObject as Error;
+        assertProgramError(error, ErrorCode.InvalidOrderPrice);
+      }
+    });
 
-  //   test("fails when creating an order with zero quantity", async () => {
-  //     const price = 1n * TOKEN;
-  //     const quantity = 0n;
+    test("fails when creating an order with zero quantity", async () => {
+      const price = 1n * TOKEN;
+      const quantity = 0n;
       
-  //     try {
-  //       const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //         user: alice,
-  //         baseTokenMint: tokenMintA,
-  //         quoteTokenMint: tokenMintB,
-  //         orderBook: orderbook,
-  //         userBaseAccount: aliceTokenAccountA,
-  //         userQuoteAccount: aliceTokenAccountB,
-  //         baseVault,
-  //         quoteVault,
-  //         side: 0,
-  //         price,
-  //         amount: quantity,
-  //         tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //       });
+      try {
+        const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+          user: alice,
+          baseTokenMint: tokenMintA,
+          quoteTokenMint: tokenMintB,
+          orderBook: orderbook,
+          userBaseAccount: aliceTokenAccountA,
+          userQuoteAccount: aliceTokenAccountB,
+          baseVault,
+          quoteVault,
+          side: 0,
+          price,
+          amount: quantity,
+          tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+        });
 
-  //       await connection.sendTransactionFromInstructions({
-  //         feePayer: alice,
-  //         instructions: [createOrderInstruction],
-  //       });
-  //       assert.fail("Expected the order creation to fail but it succeeded");
-  //     } catch (thrownObject) {
-  //       const error = thrownObject as Error;
-  //       assertProgramError(error, ErrorCode.InvalidOrderAmount);
-  //     }
-  //   });
+        await connection.sendTransactionFromInstructions({
+          feePayer: alice,
+          instructions: [createOrderInstruction],
+        });
+        assert.fail("Expected the order creation to fail but it succeeded");
+      } catch (thrownObject) {
+        const error = thrownObject as Error;
+        assertProgramError(error, ErrorCode.InvalidOrderAmount);
+      }
+    });
 
-  //   test("fails when creating an order with insufficient funds", async () => {
-  //     const price = 1000n;
-  //     const quantity = 1000n * TOKEN;
+    test("fails when creating an order with insufficient funds", async () => {
+      const price = 1000n;
+      const quantity = 1000n * TOKEN;
       
-  //     try {
-  //       const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //         user: alice,
-  //         baseTokenMint: tokenMintA,
-  //         quoteTokenMint: tokenMintB,
-  //         orderBook: orderbook,
-  //         userBaseAccount: aliceTokenAccountA,
-  //         userQuoteAccount: aliceTokenAccountB,
-  //         baseVault,
-  //         quoteVault,
-  //         side: 0,
-  //         price,
-  //         amount: quantity,
-  //         tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //       });
+      try {
+        const createOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+          user: alice,
+          baseTokenMint: tokenMintA,
+          quoteTokenMint: tokenMintB,
+          orderBook: orderbook,
+          userBaseAccount: aliceTokenAccountA,
+          userQuoteAccount: aliceTokenAccountB,
+          baseVault,
+          quoteVault,
+          side: 0,
+          price,
+          amount: quantity,
+          tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+        });
 
-  //       await connection.sendTransactionFromInstructions({
-  //         feePayer: alice,
-  //         instructions: [createOrderInstruction],
-  //       });
-  //       assert.fail("Expected the order creation to fail but it succeeded");
-  //     } catch (thrownObject) {
-  //       const error = thrownObject as Error;
-  //       assertProgramError(error, SplTokenError.InsufficientFunds);
-  //     }
-  //   });
-  // });
+        await connection.sendTransactionFromInstructions({
+          feePayer: alice,
+          instructions: [createOrderInstruction],
+        });
+        assert.fail("Expected the order creation to fail but it succeeded");
+      } catch (thrownObject) {
+        const error = thrownObject as Error;
+        assertProgramError(error, SplTokenError.InsufficientFunds);
+      }
+    });
+  });
 
   describe("matchOrder", () => {
     let orderbook: Address;
@@ -516,310 +517,311 @@ describe("CLOB", () => {
         "Alice's base token balance should have increased by the matched amount");
     });
 
-    // test("successfully matches a sell order", async () => {
-    //   // Get initial balances
-    //   const bobQuoteBalanceBefore = await connection.getTokenAccountBalance({
-    //     tokenAccount: bobTokenAccountB,
-    //     mint: tokenMintB,
-    //     useTokenExtensions: true,
-    //   });
+    test("successfully matches a sell order", async () => {
+      // Get initial balances
+      const bobQuoteBalanceBefore = await connection.getTokenAccountBalance({
+        tokenAccount: bobTokenAccountB,
+        mint: tokenMintB,
+        useTokenExtensions: true,
+      });
 
-    //   console.log("bobQuoteBalanceBefore: ", bobQuoteBalanceBefore.amount.toString());
+      console.log("bobQuoteBalanceBefore: ", bobQuoteBalanceBefore.amount.toString());
 
-    //   // Match Bob's sell order
-    //   const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
-    //     user: bob,
-    //     baseTokenMint: tokenMintA,
-    //     quoteTokenMint: tokenMintB,
-    //     orderBook: orderbook,
-    //     userBaseAccount: bobTokenAccountA,
-    //     userQuoteAccount: bobTokenAccountB,
-    //     baseVault,
-    //     quoteVault,
-    //     orderId: sellOrderId,
-    //     tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-    //   });
+      // Match Bob's sell order
+      const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
+        user: bob,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: bobTokenAccountA,
+        userQuoteAccount: bobTokenAccountB,
+        baseVault,
+        quoteVault,
+        orderId: sellOrderId,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-    //   console.log('here1')
+      console.log('here1')
 
-    //   const matchOrderSignature = await connection.sendTransactionFromInstructions({
-    //     feePayer: bob,
-    //     instructions: [matchOrderInstruction],
-    //   });
+      const matchOrderSignature = await connection.sendTransactionFromInstructions({
+        feePayer: bob,
+        instructions: [matchOrderInstruction],
+      });
 
-    //   console.log('here2')
+      console.log('here2')
 
-    //   const matchOrderLogs = await connection.getLogs(matchOrderSignature);
-    //   console.log("matchOrderLogs: ", matchOrderLogs);
+      const matchOrderLogs = await connection.getLogs(matchOrderSignature);
+      console.log("matchOrderLogs: ", matchOrderLogs);
 
-    //   // Check Bob's quote token balance increased
-    //   const bobQuoteBalanceAfter = await connection.getTokenAccountBalance({
-    //     tokenAccount: bobTokenAccountB,
-    //     mint: tokenMintB,
-    //     useTokenExtensions: true,
-    //   });
+      // Check Bob's quote token balance increased
+      const bobQuoteBalanceAfter = await connection.getTokenAccountBalance({
+        tokenAccount: bobTokenAccountB,
+        mint: tokenMintB,
+        useTokenExtensions: true,
+      });
 
-    //   // Bob should have received 2 TOKEN * 2 TOKEN (quantity * price) of quote tokens
-    //   const expectedIncrease = 2n * TOKEN * 2n;
-    //   const actualIncrease = BigInt(bobQuoteBalanceAfter.amount.toString()) - 
-    //                         BigInt(bobQuoteBalanceBefore.amount.toString());
+      // Bob should have received 2 TOKEN * 2 TOKEN (quantity * price) of quote tokens
+      const expectedIncrease = 2n * TOKEN * 2n;
+      const actualIncrease = BigInt(bobQuoteBalanceAfter.amount.toString()) - 
+                            BigInt(bobQuoteBalanceBefore.amount.toString());
 
-    //   console.log("expectedIncrease: ", expectedIncrease.toString());
-    //   console.log("actualIncrease: ", actualIncrease.toString());
+      console.log("expectedIncrease: ", expectedIncrease.toString());
+      console.log("actualIncrease: ", actualIncrease.toString());
       
-    //   assert.equal(actualIncrease.toString(), expectedIncrease.toString(), 
-    //     "Bob's quote token balance should have increased by the matched amount * price");
-    // });
+      assert.equal(actualIncrease.toString(), expectedIncrease.toString(), 
+        "Bob's quote token balance should have increased by the matched amount * price");
+    });
   });
 
-  // describe("withdrawFunds", () => {
-  //   let orderbook: Address;
-  //   let baseVault: Address;
-  //   let quoteVault: Address;
+  describe("withdrawFunds", () => {
+    let orderbook: Address;
+    let baseVault: Address;
+    let quoteVault: Address;
 
-  //   before(async () => {
-  //     const result = await initializeOrderbook({
-  //       connection,
-  //       user,
-  //       tokenMintA,
-  //       tokenMintB,
-  //     });
+    before(async () => {
+      const result = await initializeOrderbook({
+        connection,
+        user,
+        tokenMintA,
+        tokenMintB,
+      });
 
-  //     orderbook = result.orderbook;
-  //     baseVault = result.baseVault;
-  //     quoteVault = result.quoteVault;
+      orderbook = result.orderbook;
+      baseVault = result.baseVault;
+      quoteVault = result.quoteVault;
 
-  //     // Create and match orders to generate balances in the orderbook
-  //     // Alice creates a buy order
-  //     const buyPrice = 2n * TOKEN;
-  //     const buyQuantity = 3n * TOKEN;
+      // Create and match orders to generate balances in the orderbook
+      // Alice creates a buy order
+      const buyPrice = 2n;
+      const buyQuantity = 3n * TOKEN;
       
-  //     const createBuyOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //       user: alice,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: aliceTokenAccountA,
-  //       userQuoteAccount: aliceTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       side: 0, // Buy
-  //       price: buyPrice,
-  //       amount: buyQuantity,
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+      const createBuyOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+        user: alice,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: aliceTokenAccountA,
+        userQuoteAccount: aliceTokenAccountB,
+        baseVault,
+        quoteVault,
+        side: 0, // Buy
+        price: buyPrice,
+        amount: buyQuantity,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: alice,
-  //       instructions: [createBuyOrderInstruction],
-  //     });
+      await connection.sendTransactionFromInstructions({
+        feePayer: alice,
+        instructions: [createBuyOrderInstruction],
+      });
 
-  //     // Bob creates a sell order that will partially match Alice's
-  //     const sellPrice = 2n;
-  //     const sellQuantity = 1n * TOKEN;
+      // Bob creates a sell order that will partially match Alice's
+      const sellPrice = 2n;
+      const sellQuantity = 1n * TOKEN;
       
-  //     const createSellOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //       user: bob,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: bobTokenAccountA,
-  //       userQuoteAccount: bobTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       side: 1, // Sell
-  //       price: sellPrice,
-  //       amount: sellQuantity,
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+      const createSellOrderInstruction = await programClient.getCreateOrderInstructionAsync({
+        user: bob,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: bobTokenAccountA,
+        userQuoteAccount: bobTokenAccountB,
+        baseVault,
+        quoteVault,
+        side: 1, // Sell
+        price: sellPrice,
+        amount: sellQuantity,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: bob,
-  //       instructions: [createSellOrderInstruction],
-  //     });
+      await connection.sendTransactionFromInstructions({
+        feePayer: bob,
+        instructions: [createSellOrderInstruction],
+      });
 
-  //     // Match Bob's sell order to generate a balance for Bob
-  //     const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
-  //       user: bob,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: bobTokenAccountA,
-  //       userQuoteAccount: bobTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       orderId: 1n, // Bob's order ID
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+    });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: bob,
-  //       instructions: [matchOrderInstruction],
-  //     });
-  //   });
+    test("successfully withdraws base tokens", async () => {
+    // Match Bob's sell order to generate a user balance for Alice
+     const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
+      user: bob,
+      baseTokenMint: tokenMintA,
+      quoteTokenMint: tokenMintB,
+      orderBook: orderbook,
+      userBaseAccount: bobTokenAccountA,
+      userQuoteAccount: bobTokenAccountB,
+      baseVault,
+      quoteVault,
+      orderId: 1n, // Bob's order ID
+      tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+    });
 
-  //   test("successfully withdraws quote tokens", async () => {
-  //     // Get Bob's initial quote token balance
-  //     const bobQuoteBalanceBefore = await connection.getTokenAccountBalance({
-  //       tokenAccount: bobTokenAccountB,
-  //       mint: tokenMintB,
-  //       useTokenExtensions: true,
-  //     });
+    await connection.sendTransactionFromInstructions({
+      feePayer: bob,
+      instructions: [matchOrderInstruction],
+    });
+    
+      const aliceBaseBalanceBefore = await connection.getTokenAccountBalance({
+        tokenAccount: aliceTokenAccountA,
+        mint: tokenMintA,
+        useTokenExtensions: true,
+      });
 
-  //     // Bob withdraws his quote tokens
-  //     const withdrawAmount = 2n * TOKEN; // The amount Bob should have from the matched order
+      // alice withdraws her base tokens
+      const withdrawAmount = 1n * TOKEN; // The amount Bob should have from the matched order
       
-  //     const withdrawFundsInstruction = await programClient.getWithdrawFundsInstructionAsync({
-  //       user: bob,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: bobTokenAccountA,
-  //       userQuoteAccount: bobTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       baseAmount: 0n, // Not withdrawing base tokens
-  //       quoteAmount: withdrawAmount,
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+      const withdrawFundsInstruction = await programClient.getWithdrawFundsInstructionAsync({
+        user: alice,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: aliceTokenAccountA,
+        userQuoteAccount: aliceTokenAccountB,
+        baseVault,
+        quoteVault,
+        baseAmount: withdrawAmount,
+        quoteAmount: 0n,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: bob,
-  //       instructions: [withdrawFundsInstruction],
-  //     });
+      await connection.sendTransactionFromInstructions({
+        feePayer: alice,
+        instructions: [withdrawFundsInstruction],
+      });
 
-  //     // Check Bob's quote token balance increased
-  //     const bobQuoteBalanceAfter = await connection.getTokenAccountBalance({
-  //       tokenAccount: bobTokenAccountB,
-  //       mint: tokenMintB,
-  //       useTokenExtensions: true,
-  //     });
-
-  //     const actualIncrease = BigInt(bobQuoteBalanceAfter.amount.toString()) - 
-  //                           BigInt(bobQuoteBalanceBefore.amount.toString());
+      const aliceBaseBalanceAfter = await connection.getTokenAccountBalance({
+        tokenAccount: aliceTokenAccountA,
+        mint: tokenMintA,
+        useTokenExtensions: true,
+      });
       
-  //     assert.equal(actualIncrease.toString(), withdrawAmount.toString(), 
-  //       "Bob's quote token balance should have increased by the withdrawn amount");
-  //   });
-
-  //   test("successfully withdraws base tokens", async () => {
-  //     // Create another matched order to generate base token balance for Alice
-  //     // Bob creates a sell order
-  //     const sellPrice = 1n * TOKEN;
-  //     const sellQuantity = 1n * TOKEN;
+      const actualIncrease = BigInt(aliceBaseBalanceAfter.amount.toString()) - 
+                            BigInt(aliceBaseBalanceBefore.amount.toString());
       
-  //     const createSellOrderInstruction = await programClient.getCreateOrderInstructionAsync({
-  //       user: bob,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: bobTokenAccountA,
-  //       userQuoteAccount: bobTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       side: 1, // Sell
-  //       price: sellPrice,
-  //       amount: sellQuantity,
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+      assert.equal(actualIncrease.toString(), withdrawAmount.toString(), 
+        "Alice's base token balance should have increased by the withdrawn amount");
+    });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: bob,
-  //       instructions: [createSellOrderInstruction],
-  //     });
+    test("successfully withdraws quote tokens", async () => {
 
-  //     // Match Alice's buy order to generate a base token balance for Alice
-  //     const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
-  //       user: alice,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: aliceTokenAccountA,
-  //       userQuoteAccount: aliceTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       orderId: 0n, // Alice's order ID
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
+      //match alice's buy order to generate a user balance for bob
+      const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
+        user: alice,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: aliceTokenAccountA,
+        userQuoteAccount: aliceTokenAccountB,
+        baseVault,
+        quoteVault,
+        orderId: 0n, // Alice's order ID
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: alice,
-  //       instructions: [matchOrderInstruction],
-  //     });
+      const matchOrderSignature = await connection.sendTransactionFromInstructions({
+        feePayer: alice,
+        instructions: [matchOrderInstruction],
+      });
 
-  //     // Get Alice's initial base token balance
-  //     const aliceBaseBalanceBefore = await connection.getTokenAccountBalance({
-  //       tokenAccount: aliceTokenAccountA,
-  //       mint: tokenMintA,
-  //       useTokenExtensions: true,
-  //     });
-
-  //     // Alice withdraws her base tokens
-  //     const withdrawAmount = 1n * TOKEN; // The amount Alice should have from the matched order
+      const matchOrderLogs = await connection.getLogs(matchOrderSignature);
+      console.log("matchOrderLogs: ", matchOrderLogs);
       
-  //     const withdrawFundsInstruction = await programClient.getWithdrawFundsInstructionAsync({
-  //       user: alice,
-  //       baseTokenMint: tokenMintA,
-  //       quoteTokenMint: tokenMintB,
-  //       orderBook: orderbook,
-  //       userBaseAccount: aliceTokenAccountA,
-  //       userQuoteAccount: aliceTokenAccountB,
-  //       baseVault,
-  //       quoteVault,
-  //       baseAmount: withdrawAmount,
-  //       quoteAmount: 0n, // Not withdrawing quote tokens
-  //       tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //     });
 
-  //     await connection.sendTransactionFromInstructions({
-  //       feePayer: alice,
-  //       instructions: [withdrawFundsInstruction],
-  //     });
+      // Get Bob's initial quote token balance
+      const bobQuoteBalanceBefore = await connection.getTokenAccountBalance({
+        tokenAccount: bobTokenAccountB,
+        mint: tokenMintB,
+        useTokenExtensions: true,
+      });
+      console.log("bobQuoteBalanceBefore: ", bobQuoteBalanceBefore.amount.toString());
 
-  //     // Check Alice's base token balance increased
-  //     const aliceBaseBalanceAfter = await connection.getTokenAccountBalance({
-  //       tokenAccount: aliceTokenAccountA,
-  //       mint: tokenMintA,
-  //       useTokenExtensions: true,
-  //     });
-
-  //     const actualIncrease = BigInt(aliceBaseBalanceAfter.amount.toString()) - 
-  //                           BigInt(aliceBaseBalanceBefore.amount.toString());
+      // bob withdraws his quote tokens
+      const withdrawAmount = 2n * TOKEN; // The amount Alice should have from the matched order
       
-  //     assert.equal(actualIncrease.toString(), withdrawAmount.toString(), 
-  //       "Alice's base token balance should have increased by the withdrawn amount");
-  //   });
+      const withdrawFundsInstruction = await programClient.getWithdrawFundsInstructionAsync({
+        user: bob,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: bobTokenAccountA,
+        userQuoteAccount: bobTokenAccountB,
+        baseVault,
+        quoteVault,
+        baseAmount: 0n,
+        quoteAmount: withdrawAmount,
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
 
-  //   test("fails when withdrawing more than available balance", async () => {
-  //     // Try to withdraw more than Bob has
-  //     const excessiveAmount = 1000n * TOKEN;
+      await connection.sendTransactionFromInstructions({
+        feePayer: bob,
+        instructions: [withdrawFundsInstruction],
+      });
+
+      // Check Alice's base token balance increased
+      const bobQuoteBalanceAfter = await connection.getTokenAccountBalance({
+        tokenAccount: bobTokenAccountB,
+        mint: tokenMintB,
+        useTokenExtensions: true,
+      });
+
+      const actualIncrease = BigInt(bobQuoteBalanceAfter.amount.toString()) - 
+                            BigInt(bobQuoteBalanceBefore.amount.toString());
       
-  //     try {
-  //       const withdrawFundsInstruction = await programClient.getWithdrawFundsInstructionAsync({
-  //         user: bob,
-  //         baseTokenMint: tokenMintA,
-  //         quoteTokenMint: tokenMintB,
-  //         orderBook: orderbook,
-  //         userBaseAccount: bobTokenAccountA,
-  //         userQuoteAccount: bobTokenAccountB,
-  //         baseVault,
-  //         quoteVault,
-  //         baseAmount: excessiveAmount,
-  //         quoteAmount: 0n,
-  //         tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
-  //       });
+      assert.equal(actualIncrease.toString(), withdrawAmount.toString(), 
+        "Bob's quote token balance should have increased by the withdrawn amount");
+    });
 
-  //       await connection.sendTransactionFromInstructions({
-  //         feePayer: bob,
-  //         instructions: [withdrawFundsInstruction],
-  //       });
-  //       assert.fail("Expected the withdrawal to fail but it succeeded");
-  //     } catch (thrownObject) {
-  //       const error = thrownObject as Error;
-  //       assert(error.message.includes("InsufficientBalance"), 
-  //         `Expected InsufficientBalance error but got: ${error.message}`);
-  //     }
-  //   });
-  // });
+    test("fails when withdrawing more than available balance", async () => {
+
+        //match alice's buy order to generate a user balance for bob
+      const matchOrderInstruction = await programClient.getMatchOrderInstructionAsync({
+        user: alice,
+        baseTokenMint: tokenMintA,
+        quoteTokenMint: tokenMintB,
+        orderBook: orderbook,
+        userBaseAccount: aliceTokenAccountA,
+        userQuoteAccount: aliceTokenAccountB,
+        baseVault,
+        quoteVault,
+        orderId: 0n, // Alice's order ID
+        tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+      });
+
+      const matchOrderSignature = await connection.sendTransactionFromInstructions({
+        feePayer: alice,
+        instructions: [matchOrderInstruction],
+      });
+
+      const matchOrderLogs = await connection.getLogs(matchOrderSignature);
+      console.log("matchOrderLogs: ", matchOrderLogs);
+      // Try to withdraw more than Bob has
+      const excessiveAmount = 1000n;
+      
+      try {
+        const withdrawFundsInstruction = await programClient.getWithdrawFundsInstructionAsync({
+          user: bob,
+          baseTokenMint: tokenMintA,
+          quoteTokenMint: tokenMintB,
+          orderBook: orderbook,
+          userBaseAccount: bobTokenAccountA,
+          userQuoteAccount: bobTokenAccountB,
+          baseVault,
+          quoteVault,
+          baseAmount: excessiveAmount,
+          quoteAmount: 0n,
+          tokenProgram: TOKEN_EXTENSIONS_PROGRAM,
+        });
+
+        await connection.sendTransactionFromInstructions({
+          feePayer: bob,
+          instructions: [withdrawFundsInstruction],
+        });
+        assert.fail("Expected the withdrawal to fail but it succeeded");
+      } catch (thrownObject) {
+        const error = thrownObject as Error;
+        assertProgramError(error, ErrorCode.InsufficientBalance);
+      }
+    });
+  });
 
 });
