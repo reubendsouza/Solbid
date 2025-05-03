@@ -4,8 +4,7 @@ import * as programClient from "../dist/js-client";
 import { connect, Connection, SOL, TOKEN_EXTENSIONS_PROGRAM } from "solana-kite";
 
 // For debugging. You could delete these, but then someone else will have to recreate them and then they'll be annoyed with you.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const log = console.log;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const stringify = (object: any) => JSON.stringify(object, null, 2);
 
