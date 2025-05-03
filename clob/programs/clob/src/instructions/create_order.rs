@@ -78,6 +78,8 @@ pub fn handle_create_order(context: Context<CreateOrder>, side: u8, price: u64, 
     
     // Create the new order
     let order_id = order_book.next_order_id();
+    msg!("Creating new order with ID: {}", order_id);
+    
     let new_order = Order {
         id: order_id,
         owner: user.key(),
@@ -104,10 +106,11 @@ pub fn handle_create_order(context: Context<CreateOrder>, side: u8, price: u64, 
                 &context.accounts.token_program,
                 None
             )?;
-            if order_book.bids.len() >= Orderbook::MAX_ORDERS {
+            if order_book.buys.len() >= Orderbook::MAX_ORDERS {
                 return err!(ErrorCode::OrderbookFull);
             }
-            order_book.bids.push(new_order);
+            msg!("Added buy order {} to orderbook at price {}", order_id, price);
+            order_book.buys.push(new_order);
         },
         Side::Sell => {
             transfer_tokens(
@@ -119,17 +122,13 @@ pub fn handle_create_order(context: Context<CreateOrder>, side: u8, price: u64, 
                 &context.accounts.token_program,
                 None
             )?;
-            if order_book.asks.len() >= Orderbook::MAX_ORDERS {
+            if order_book.sells.len() >= Orderbook::MAX_ORDERS {
                 return err!(ErrorCode::OrderbookFull);
             }
-            order_book.asks.push(new_order);
+            msg!("Added sell order {} to orderbook at price {}", order_id, price);
+            order_book.sells.push(new_order);
         }
     }
-
-    //TODO: match existing orders
-    
-    //TODO: f the order wasn't fully filled, add it to the orderbook
     
     Ok(())
-    
 }

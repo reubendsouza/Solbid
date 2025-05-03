@@ -8,3 +8,4 @@
 
 export * from './order';
 export * from './side';
+export * from './userBalance';

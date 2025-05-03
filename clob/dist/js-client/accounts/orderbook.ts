@@ -43,8 +43,12 @@ import {
 import {
   getOrderDecoder,
   getOrderEncoder,
+  getUserBalanceDecoder,
+  getUserBalanceEncoder,
   type Order,
   type OrderArgs,
+  type UserBalance,
+  type UserBalanceArgs,
 } from '../types';
 
 export const ORDERBOOK_DISCRIMINATOR = new Uint8Array([
@@ -67,6 +71,7 @@ export type Orderbook = {
   asks: Array<Order>;
   authority: Address;
   orderCounter: bigint;
+  userBalances: Array<UserBalance>;
   bump: number;
 };
 
@@ -81,6 +86,7 @@ export type OrderbookArgs = {
   asks: Array<OrderArgs>;
   authority: Address;
   orderCounter: number | bigint;
+  userBalances: Array<UserBalanceArgs>;
   bump: number;
 };
 
@@ -98,6 +104,7 @@ export function getOrderbookEncoder(): Encoder<OrderbookArgs> {
       ['asks', getArrayEncoder(getOrderEncoder())],
       ['authority', getAddressEncoder()],
       ['orderCounter', getU64Encoder()],
+      ['userBalances', getArrayEncoder(getUserBalanceEncoder())],
       ['bump', getU8Encoder()],
     ]),
     (value) => ({ ...value, discriminator: ORDERBOOK_DISCRIMINATOR })
@@ -117,6 +124,7 @@ export function getOrderbookDecoder(): Decoder<Orderbook> {
     ['asks', getArrayDecoder(getOrderDecoder())],
     ['authority', getAddressDecoder()],
     ['orderCounter', getU64Decoder()],
+    ['userBalances', getArrayDecoder(getUserBalanceDecoder())],
     ['bump', getU8Decoder()],
   ]);
 }

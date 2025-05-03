@@ -9,7 +9,7 @@ use crate::instructions::shared::transfer_tokens;
 use crate::error::ErrorCode;
 
 #[derive(Accounts)]
-pub struct MatchOrderAccountConstraints<'info> {
+pub struct MatchOrder<'info> {
     #[account(mut)]
     pub user: Signer<'info>,
 
@@ -64,7 +64,7 @@ pub struct MatchingResult {
 }
 
 pub fn handle_match_order(
-    context: Context<MatchOrderAccountConstraints>,
+    context: Context<MatchOrder>,
     order_id: u64,
 ) -> Result<()> {
     let order_book = &mut context.accounts.order_book;
@@ -74,8 +74,14 @@ pub fn handle_match_order(
     let mut order_index = None;
     let mut order_side = None;
     
-    // Search in bids
-    for (i, bid) in order_book.bids.iter().enumerate() {
+    // Add debug logging to help identify the issue
+    msg!("Searching for order ID: {}", order_id);
+    msg!("Number of buys: {}", order_book.buys.len());
+    msg!("Number of sells: {}", order_book.sells.len());
+    
+    // Search in buys
+    for (i, bid) in order_book.buys.iter().enumerate() {
+        msg!("Bid ID: {}", bid.id);
         if bid.id == order_id {
             if bid.owner != user.key() {
                 return err!(ErrorCode::NotOrderOwner);
@@ -86,9 +92,10 @@ pub fn handle_match_order(
         }
     }
     
-    // If not found in bids, search in asks
+    // If not found in buys, search in sells
     if order_index.is_none() {
-        for (i, ask) in order_book.asks.iter().enumerate() {
+        for (i, ask) in order_book.sells.iter().enumerate() {
+            msg!("Ask ID: {}", ask.id);
             if ask.id == order_id {
                 if ask.owner != user.key() {
                     return err!(ErrorCode::NotOrderOwner);
@@ -103,13 +110,16 @@ pub fn handle_match_order(
     // Return error if order not found
     let (order_index, order_side) = match (order_index, order_side) {
         (Some(idx), Some(side)) => (idx, side),
-        _ => return err!(ErrorCode::OrderNotFound),
+        _ => {
+            msg!("Order not found with ID: {}", order_id);
+            return err!(ErrorCode::OrderNotFound);
+        }
     };
     
     // Get the order
     let mut order = match order_side {
-        Side::Buy => order_book.bids.remove(order_index),
-        Side::Sell => order_book.asks.remove(order_index),
+        Side::Buy => order_book.buys.remove(order_index),
+        Side::Sell => order_book.sells.remove(order_index),
     };
 
     // Before the match statement, get the account info and bump
@@ -133,13 +143,13 @@ pub fn handle_match_order(
 
     match order.side {
         Side::Buy => {
-            // For buy orders, match against asks (sell orders)
-            // Sort asks by price (lowest first)
-            order_book.asks.sort_by(|a, b| a.price.cmp(&b.price));
+            // For buy orders, match against sells (sell orders)
+            // Sort sells by price (lowest first)
+            order_book.sells.sort_by(|a, b| a.price.cmp(&b.price));
             
             let mut i = 0;
-            while i < order_book.asks.len() && remaining_amount > 0 {
-                let ask = &mut order_book.asks[i];
+            while i < order_book.sells.len() && remaining_amount > 0 {
+                let ask = &mut order_book.sells[i];
                 
                 // Check if the buy price is >= the ask price
                 if order.price >= ask.price {
@@ -187,7 +197,7 @@ pub fn handle_match_order(
 
                         // Remove filled orders
                         if ask.remaining_amount == 0 {
-                            order_book.asks.remove(i);
+                            order_book.sells.remove(i);
                             // Don't increment i since we removed an element
                             continue;
                         }
@@ -204,13 +214,13 @@ pub fn handle_match_order(
             }
         },
         Side::Sell => {
-            // For sell orders, match against bids (buy orders)
-            // Sort bids by price (highest first)
-            order_book.bids.sort_by(|a, b| b.price.cmp(&a.price));
+            // For sell orders, match against buys (buy orders)
+            // Sort buys by price (highest first)
+            order_book.buys.sort_by(|a, b| b.price.cmp(&a.price));
             
             let mut i = 0;
-            while i < order_book.bids.len() && remaining_amount > 0 {
-                let bid = &mut order_book.bids[i];
+            while i < order_book.buys.len() && remaining_amount > 0 {
+                let bid = &mut order_book.buys[i];
                 
                 // Check if the sell price is <= the bid price
                 if order.price <= bid.price {
@@ -256,7 +266,7 @@ pub fn handle_match_order(
 
                         // Remove filled orders
                         if bid.remaining_amount == 0 {
-                            order_book.bids.remove(i);
+                            order_book.buys.remove(i);
                             // Don't increment i since we removed an element
                             continue;
                         }
@@ -279,18 +289,32 @@ pub fn handle_match_order(
     if remaining_amount > 0 {
         match order_side {
             Side::Buy => {
-                if order_book.bids.len() >= Orderbook::MAX_ORDERS {
+                if order_book.buys.len() >= Orderbook::MAX_ORDERS {
                     return err!(ErrorCode::OrderbookFull);
                 }
-                order_book.bids.push(order);
+                order_book.buys.push(order);
             },
             Side::Sell => {
-                if order_book.asks.len() >= Orderbook::MAX_ORDERS {
+                if order_book.sells.len() >= Orderbook::MAX_ORDERS {
                     return err!(ErrorCode::OrderbookFull);
                 }
-                order_book.asks.push(order);
+                order_book.sells.push(order);
             }
         }
+    }
+    
+    // Log the orderbook state after matching
+    msg!("Orderbook state after matching:");
+    msg!("Number of buys: {}", order_book.buys.len());
+    for (i, bid) in order_book.buys.iter().enumerate() {
+        msg!("Bid #{}: ID: {}, Price: {}, Remaining: {}, Owner: {}", 
+            i, bid.id, bid.price, bid.remaining_amount, bid.owner);
+    }
+    
+    msg!("Number of sells: {}", order_book.sells.len());
+    for (i, ask) in order_book.sells.iter().enumerate() {
+        msg!("Ask #{}: ID: {}, Price: {}, Remaining: {}, Owner: {}", 
+            i, ask.id, ask.price, ask.remaining_amount, ask.owner);
     }
     
     Ok(())

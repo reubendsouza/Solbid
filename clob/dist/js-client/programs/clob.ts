@@ -16,6 +16,8 @@ import {
 import {
   type ParsedCreateOrderInstruction,
   type ParsedInitializeOrderbookInstruction,
+  type ParsedMatchOrderInstruction,
+  type ParsedWithdrawFundsInstruction,
 } from '../instructions';
 
 export const CLOB_PROGRAM_ADDRESS =
@@ -48,6 +50,8 @@ export function identifyClobAccount(
 export enum ClobInstruction {
   CreateOrder,
   InitializeOrderbook,
+  MatchOrder,
+  WithdrawFunds,
 }
 
 export function identifyClobInstruction(
@@ -76,6 +80,28 @@ export function identifyClobInstruction(
   ) {
     return ClobInstruction.InitializeOrderbook;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([95, 230, 21, 6, 114, 23, 41, 111])
+      ),
+      0
+    )
+  ) {
+    return ClobInstruction.MatchOrder;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([241, 36, 29, 111, 208, 31, 104, 217])
+      ),
+      0
+    )
+  ) {
+    return ClobInstruction.WithdrawFunds;
+  }
   throw new Error(
     'The provided instruction could not be identified as a clob instruction.'
   );
@@ -89,4 +115,10 @@ export type ParsedClobInstruction<
     } & ParsedCreateOrderInstruction<TProgram>)
   | ({
       instructionType: ClobInstruction.InitializeOrderbook;
-    } & ParsedInitializeOrderbookInstruction<TProgram>);
+    } & ParsedInitializeOrderbookInstruction<TProgram>)
+  | ({
+      instructionType: ClobInstruction.MatchOrder;
+    } & ParsedMatchOrderInstruction<TProgram>)
+  | ({
+      instructionType: ClobInstruction.WithdrawFunds;
+    } & ParsedWithdrawFundsInstruction<TProgram>);

@@ -8,3 +8,5 @@
 
 export * from './createOrder';
 export * from './initializeOrderbook';
+export * from './matchOrder';
+export * from './withdrawFunds';

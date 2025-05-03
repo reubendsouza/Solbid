@@ -28,26 +28,42 @@ export const CLOB_ERROR__ORDER_NOT_FOUND = 0x1774; // 6004
 export const CLOB_ERROR__ORDERBOOK_FULL = 0x1775; // 6005
 /** InvalidOrderSide: Invalid order side */
 export const CLOB_ERROR__INVALID_ORDER_SIDE = 0x1776; // 6006
+/** NotOrderOwner: Not order owner */
+export const CLOB_ERROR__NOT_ORDER_OWNER = 0x1777; // 6007
+/** TooManyUsers: Too many users with balances */
+export const CLOB_ERROR__TOO_MANY_USERS = 0x1778; // 6008
+/** UserNotFound: User not found */
+export const CLOB_ERROR__USER_NOT_FOUND = 0x1779; // 6009
+/** InsufficientBalance: Insufficient balance */
+export const CLOB_ERROR__INSUFFICIENT_BALANCE = 0x177a; // 6010
 
 export type ClobError =
   | typeof CLOB_ERROR__CALCULATION_FAILURE
+  | typeof CLOB_ERROR__INSUFFICIENT_BALANCE
   | typeof CLOB_ERROR__INSUFFICIENT_FUNDS
   | typeof CLOB_ERROR__INVALID_ORDER_AMOUNT
   | typeof CLOB_ERROR__INVALID_ORDER_PRICE
   | typeof CLOB_ERROR__INVALID_ORDER_SIDE
+  | typeof CLOB_ERROR__NOT_ORDER_OWNER
   | typeof CLOB_ERROR__ORDERBOOK_FULL
-  | typeof CLOB_ERROR__ORDER_NOT_FOUND;
+  | typeof CLOB_ERROR__ORDER_NOT_FOUND
+  | typeof CLOB_ERROR__TOO_MANY_USERS
+  | typeof CLOB_ERROR__USER_NOT_FOUND;
 
 let clobErrorMessages: Record<ClobError, string> | undefined;
 if (process.env.NODE_ENV !== 'production') {
   clobErrorMessages = {
     [CLOB_ERROR__CALCULATION_FAILURE]: `Calculation overflow or underflow`,
+    [CLOB_ERROR__INSUFFICIENT_BALANCE]: `Insufficient balance`,
     [CLOB_ERROR__INSUFFICIENT_FUNDS]: `Insufficient funds for the order`,
     [CLOB_ERROR__INVALID_ORDER_AMOUNT]: `Order amount must be greater than zero`,
     [CLOB_ERROR__INVALID_ORDER_PRICE]: `Order price must be greater than zero`,
     [CLOB_ERROR__INVALID_ORDER_SIDE]: `Invalid order side`,
+    [CLOB_ERROR__NOT_ORDER_OWNER]: `Not order owner`,
     [CLOB_ERROR__ORDERBOOK_FULL]: `Orderbook is full`,
     [CLOB_ERROR__ORDER_NOT_FOUND]: `Order not found`,
+    [CLOB_ERROR__TOO_MANY_USERS]: `Too many users with balances`,
+    [CLOB_ERROR__USER_NOT_FOUND]: `User not found`,
   };
 }
 

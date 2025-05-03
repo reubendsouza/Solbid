@@ -12,9 +12,9 @@ pub struct Orderbook {
     pub base_decimals: u8,
     pub quote_decimals: u8,
     #[max_len(10, Order)]
-    pub bids: Vec<Order>,
+    pub buys: Vec<Order>,
     #[max_len(10, Order)]
-    pub asks: Vec<Order>,
+    pub sells: Vec<Order>,
     pub authority: Pubkey,
     pub order_counter: u64,
     #[max_len(20, UserBalance)]
