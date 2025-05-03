@@ -23,4 +23,8 @@ pub mod clob {
         create_order::handle_create_order(ctx, side, price, amount)
     }
 
+    pub fn withdraw_funds(ctx: Context<WithdrawFundsAccountConstraints>, base_amount: u64, quote_amount: u64) -> Result<()> {
+        withdraw_funds::handle_withdraw_funds(ctx, base_amount, quote_amount)
+    }
+
 }

@@ -25,4 +25,13 @@ pub enum ErrorCode {
 
     #[msg("Not order owner")]
     NotOrderOwner,
+
+    #[msg("Too many users with balances")]
+    TooManyUsers,
+    
+    #[msg("User not found")]
+    UserNotFound,
+    
+    #[msg("Insufficient balance")]
+    InsufficientBalance,
 }

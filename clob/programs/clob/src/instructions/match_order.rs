@@ -16,14 +16,16 @@ pub struct MatchOrderAccountConstraints<'info> {
     pub base_token_mint: InterfaceAccount<'info, Mint>,
     pub quote_token_mint: InterfaceAccount<'info, Mint>,
 
-    #[account(mut,
+    #[account(init_if_needed,
+        payer = user,
         associated_token::mint = base_token_mint,
         associated_token::authority = user,
         associated_token::token_program = token_program,
         )]
     pub user_base_account: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(mut,
+    #[account(init_if_needed,
+        payer = user,
         associated_token::mint = quote_token_mint,
         associated_token::authority = user,
         associated_token::token_program = token_program,
@@ -145,6 +147,9 @@ pub fn handle_match_order(
                     let match_amount = remaining_amount.min(ask.remaining_amount);
                     
                     if match_amount > 0 {
+
+                        let ask_owner = ask.owner;
+
                         // Update the order amounts
                         ask.remaining_amount = ask.remaining_amount.checked_sub(match_amount)
                             .ok_or(ErrorCode::CalculationFailure)?;
@@ -168,19 +173,27 @@ pub fn handle_match_order(
                         let quote_amount = match_amount.checked_mul(ask.price)
                             .ok_or(ErrorCode::CalculationFailure)?;
                             
-                        // Transfer quote tokens from buyer to seller
-                        // The buyer is the current user, so we use their quote account
-                        //TODO: This cant be done with the current implementation, because we wont have all the 
-                        //makers token accounts in the context, instead we better create vaults for each maker
-                        //and then transfer the tokens from the vault to the maker and maker can withdraw the tokens
-                        //from the vault
-                        
+                    
+                         // Transfer quote tokens from buyer (taker) to vault
+                        transfer_tokens(
+                            &context.accounts.user_quote_account,
+                            &context.accounts.quote_vault,
+                            &quote_amount,
+                            &context.accounts.quote_token_mint,
+                            &context.accounts.user.to_account_info(),
+                            &context.accounts.token_program,
+                            None,
+                        )?;
+
                         // Remove filled orders
                         if ask.remaining_amount == 0 {
                             order_book.asks.remove(i);
                             // Don't increment i since we removed an element
                             continue;
                         }
+
+                        // Instead of direct transfer, update the seller's balance
+                        order_book.add_balance(ask_owner, 0, quote_amount)?;
                     }
                 } else {
                     // No more matching orders (price too high)
@@ -205,6 +218,7 @@ pub fn handle_match_order(
                     let match_amount = remaining_amount.min(bid.remaining_amount);
                     
                     if match_amount > 0 {
+                        let bid_owner = bid.owner;
                         // Update the order amounts
                         bid.remaining_amount = bid.remaining_amount.checked_sub(match_amount)
                             .ok_or(ErrorCode::CalculationFailure)?;
@@ -228,12 +242,26 @@ pub fn handle_match_order(
                             signers_seeds,
                         )?;
                         
+                        // Transfer base tokens from seller (taker) to vault
+                        transfer_tokens(
+                            &context.accounts.user_base_account,
+                            &context.accounts.base_vault,
+                            &match_amount,
+                            &context.accounts.base_token_mint,
+                            &context.accounts.user.to_account_info(),
+                            &context.accounts.token_program,
+                            None,
+                        )?;
+
+
                         // Remove filled orders
                         if bid.remaining_amount == 0 {
                             order_book.bids.remove(i);
                             // Don't increment i since we removed an element
                             continue;
                         }
+
+                        order_book.add_balance(bid_owner, match_amount, 0)?;
                     }
                 } else {
                     // No more matching orders (price too low)

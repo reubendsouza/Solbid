@@ -53,7 +53,8 @@ pub fn init_orderbook(context: Context<InitializeOrderbook>) -> Result<()> {
         asks: Vec::with_capacity(Orderbook::MAX_ORDERS),
         authority: context.accounts.payer.key(),
         order_counter: 0,
-        bump: context.bumps.order_book
+        bump: context.bumps.order_book,
+        user_balances: Vec::with_capacity(20),
     });
     Ok(())
 }
