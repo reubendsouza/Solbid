@@ -9,8 +9,12 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
+use ephemeral_rollups_sdk::anchor::ephemeral;
+
+
 declare_id!("A8RhaeMu9ci18X6mWi6Fa8jcpD5Rk1qR36Wj4waYPJuE");
 
+#[ephemeral]
 #[program]
 pub mod clob {
     use super::*;
@@ -29,5 +33,13 @@ pub mod clob {
 
     pub fn withdraw_funds(ctx: Context<WithdrawFundsAccountConstraints>, base_amount: u64, quote_amount: u64) -> Result<()> {
         withdraw_funds::handle_withdraw_funds(ctx, base_amount, quote_amount)
+    }
+
+    pub fn delegate(ctx: Context<DelegateOrderbook>) -> Result<()> {
+        delegate::handle_delegate(ctx)
+    }
+
+    pub fn undelegate(ctx: Context<UndelegateOrderbook>) -> Result<()> {
+        undelegate::handle_undelegate(ctx)
     }
 }

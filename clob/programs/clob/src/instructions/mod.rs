@@ -12,3 +12,9 @@ pub use match_order::*;
 
 pub mod withdraw_funds;
 pub use withdraw_funds::*;
+
+pub mod delegate;
+pub use delegate::*;
+
+pub mod undelegate;
+pub use undelegate::*;
