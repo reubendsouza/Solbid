@@ -13,6 +13,9 @@ pub use match_order::*;
 pub mod withdraw_funds;
 pub use withdraw_funds::*;
 
+pub mod deposit_balance;
+pub use deposit_balance::*;
+
 pub mod delegate;
 pub use delegate::*;
 

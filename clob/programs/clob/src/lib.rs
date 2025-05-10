@@ -12,7 +12,7 @@ pub use state::*;
 use ephemeral_rollups_sdk::anchor::ephemeral;
 
 
-declare_id!("A8RhaeMu9ci18X6mWi6Fa8jcpD5Rk1qR36Wj4waYPJuE");
+declare_id!("GpoT3RJgufPCaJM7AiRBqip8mzCxZGsZYXVSULRrWuX5");
 
 #[ephemeral]
 #[program]
@@ -21,6 +21,10 @@ pub mod clob {
 
     pub fn initialize_orderbook(ctx: Context<InitializeOrderbook>) -> Result<()> {
         initialize_orderbook::init_orderbook(ctx)
+    }
+
+    pub fn deposit_balance(ctx: Context<DepositBalance>, quote_amount: u64, base_amount: u64) -> Result<()> {
+        deposit_balance::handle_deposit_balance(ctx, quote_amount, base_amount)
     }
 
     pub fn create_order(ctx: Context<CreateOrder>, side: u8, price: u64, amount: u64) -> Result<()> {

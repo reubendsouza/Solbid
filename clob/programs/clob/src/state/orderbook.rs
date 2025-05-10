@@ -38,9 +38,10 @@ impl Orderbook {
         id
     }
 
-    pub fn add_balance(&mut self, owner: Pubkey, base_amount: u64, quote_amount: u64) -> Result<()> {
+    pub fn add_balance(&mut self, owner: &Pubkey, base_amount: u64, quote_amount: u64) -> Result<()> {
+
         for balance in &mut self.user_balances {
-            if balance.owner == owner {
+            if balance.owner == *owner {
                 if base_amount > 0 {
                     balance.base_amount = balance.base_amount
                         .checked_add(base_amount)
@@ -62,7 +63,7 @@ impl Orderbook {
             require!(self.user_balances.len() < 20, ErrorCode::TooManyUsers);
             
             self.user_balances.push(UserBalance {
-                owner,
+                owner: *owner,
                 base_amount,
                 quote_amount,
             });

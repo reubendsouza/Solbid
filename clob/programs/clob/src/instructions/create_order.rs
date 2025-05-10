@@ -1,12 +1,9 @@
 use anchor_lang::prelude::*;
 
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
-};
+use anchor_spl::token_interface::Mint;
+
 
 use crate::state::{Orderbook, Order, Side};
-use crate::instructions::shared::transfer_tokens;
 use crate::error::ErrorCode;
 
 #[derive(Accounts)]
@@ -23,36 +20,6 @@ pub struct CreateOrder<'info> {
     )]
     pub order_book: Account<'info, Orderbook>,
 
-    #[account(mut,
-        associated_token::mint = base_token_mint,
-        associated_token::authority = user,
-        associated_token::token_program = token_program,
-        )]
-    pub user_base_account: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(mut,
-        associated_token::mint = quote_token_mint,
-        associated_token::authority = user,
-        associated_token::token_program = token_program,
-        )]
-    pub user_quote_account: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(mut,
-        associated_token::mint = base_token_mint,
-        associated_token::authority = order_book,
-        associated_token::token_program = token_program,
-        )]
-    pub base_vault: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(mut,
-        associated_token::mint = quote_token_mint,
-        associated_token::authority = order_book,
-        associated_token::token_program = token_program,
-        )]
-    pub quote_vault: InterfaceAccount<'info, TokenAccount>,
-
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
 
@@ -97,34 +64,18 @@ pub fn handle_create_order(context: Context<CreateOrder>, side: u8, price: u64, 
             let quote_amount = price.checked_mul(amount)
                 .ok_or(ErrorCode::CalculationFailure)?;
 
-            transfer_tokens(
-                &context.accounts.user_quote_account,
-                &context.accounts.quote_vault,
-                &quote_amount,
-                &context.accounts.quote_token_mint,
-                &context.accounts.user.to_account_info(),
-                &context.accounts.token_program,
-                None
-            )?;
             if order_book.buys.len() >= Orderbook::MAX_ORDERS {
                 return err!(ErrorCode::OrderbookFull);
             }
+            order_book.subtract_balance(&user.key(), 0, quote_amount)?;
             msg!("Added buy order {} to orderbook at price {}", order_id, price);
             order_book.buys.push(new_order);
         },
         Side::Sell => {
-            transfer_tokens(
-                &context.accounts.user_base_account,
-                &context.accounts.base_vault,
-                &amount,
-                &context.accounts.base_token_mint,
-                &context.accounts.user.to_account_info(),
-                &context.accounts.token_program,
-                None
-            )?;
             if order_book.sells.len() >= Orderbook::MAX_ORDERS {
                 return err!(ErrorCode::OrderbookFull);
             }
+            order_book.subtract_balance(&user.key(), amount, 0)?;
             msg!("Added sell order {} to orderbook at price {}", order_id, price);
             order_book.sells.push(new_order);
         }

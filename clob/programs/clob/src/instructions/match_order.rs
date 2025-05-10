@@ -168,6 +168,7 @@ pub fn handle_match_order(
             let mut i = 0;
             while i < order_book.sells.len() && remaining_amount > 0 {
                 let ask = &mut order_book.sells[i];
+                let ask_owner = ask.owner;
                 
                 // Check if the buy price is >= the ask price
                 if order.price >= ask.price {
@@ -175,8 +176,6 @@ pub fn handle_match_order(
                     let match_amount = remaining_amount.min(ask.remaining_amount);
                     
                     if match_amount > 0 {
-
-                        let ask_owner = ask.owner;
 
                         // Update the order amounts
                         ask.remaining_amount = ask.remaining_amount.checked_sub(match_amount)
@@ -200,13 +199,15 @@ pub fn handle_match_order(
                         // Calculate quote amount to transfer to seller
                         let quote_amount = match_amount.checked_mul(ask.price)
                             .ok_or(ErrorCode::CalculationFailure)?;
-                            
-
+                        
                         // Remove filled orders
                         let remaining_amount = ask.remaining_amount;
 
+                        order_book.add_balance(&user.key(), match_amount, 0)?;
+                        order_book.subtract_balance(&user.key(), 0, quote_amount)?;
+
                         // Instead of direct transfer, update the seller's balance
-                        order_book.add_balance(ask_owner, 0, quote_amount)?;
+                        order_book.add_balance(&ask_owner, 0, quote_amount)?;
                         
                         if remaining_amount == 0 {
                             order_book.sells.remove(i);
@@ -250,21 +251,13 @@ pub fn handle_match_order(
                         let quote_amount = match_amount.checked_mul(bid.price)
                             .ok_or(ErrorCode::CalculationFailure)?;
 
-                        // Transfer quote tokens from vault to seller
-                        transfer_tokens(
-                            &context.accounts.quote_vault,
-                            &context.accounts.user_quote_account,
-                            &quote_amount,
-                            &context.accounts.quote_token_mint,
-                            &order_book_info,
-                            &context.accounts.token_program,
-                            signers_seeds,
-                        )?;
-
                         // Remove filled orders
                         let remaining_amount = bid.remaining_amount;
 
-                        order_book.add_balance(bid_owner, match_amount, 0)?;
+                        order_book.add_balance(&user.key(), 0, quote_amount)?;
+                        order_book.subtract_balance(&user.key(), match_amount, 0)?;
+
+                        order_book.add_balance(&bid_owner, match_amount, 0)?;
 
                         if remaining_amount == 0 {
                             order_book.buys.remove(i);

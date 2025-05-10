@@ -8,6 +8,7 @@
     "@codama/nodes-from-anchor": "^1.1.13",
     "@codama/renderers": "^1.0.21",
     "codama": "^1.2.13",
+    "@coral-xyz/anchor": "^0.31.1",
     "solana-kite": "^1.2.1",
     "tsx": "^4.19.4"
   },

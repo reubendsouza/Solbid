@@ -1,6 +1,5 @@
 .anchor
 .DS_Store
-target
 **/*.rs.bk
 node_modules
 test-ledger
@@ -8,3 +7,12 @@ test-ledger
 .env
 .cursor
 dist
+
+
+# Anchor
+/target/debug
+/target/deploy
+/target/release
+/target/sbf-solana-solana
+/target/test-ledger
+/target/.rustc_info.json

@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-clob = "A8RhaeMu9ci18X6mWi6Fa8jcpD5Rk1qR36Wj4waYPJuE"
+clob = "GpoT3RJgufPCaJM7AiRBqip8mzCxZGsZYXVSULRrWuX5"
 
 [registry]
 url = "https://api.apr.dev"
