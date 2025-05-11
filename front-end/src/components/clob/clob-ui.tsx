@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { useAnchorProvider } from '../solana/solana-provider'
 import * as anchor from '@coral-xyz/anchor'
 import { useRouter } from 'next/navigation'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog'
 
 const RadioGroup = ({ defaultValue, className, onValueChange, children }: any) => (
   <div className={className}>
@@ -30,6 +31,55 @@ const RadioGroupItem = ({ value, id }: any) => (
     defaultChecked={value === "0"}
   />
 );
+
+// Helper to format numbers
+const formatNum = (n: number | string, decimals = 2) => {
+  const num = Number(n)
+  if (isNaN(num)) return ''
+  return num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+}
+
+function OrderbookTable({ orderbook }: { orderbook: any }) {
+  // Extract and sort orders
+  const bids = [...(orderbook?.buys || [])].sort((a, b) => Number(b.price) - Number(a.price))
+  const asks = [...(orderbook?.sells || [])].sort((a, b) => Number(a.price) - Number(b.price))
+  const maxRows = Math.max(bids.length, asks.length)
+
+  // Find mid price
+  const bestBid = bids[0]?.price
+  const bestAsk = asks[0]?.price
+  const mid = bestBid && bestAsk ? (Number(bestBid) + Number(bestAsk)) / 2 : null
+
+  return (
+    <div className="bg-black rounded-lg p-4 w-full">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-gray-400">
+            <th>Amount</th>
+            <th>Bid</th>
+            <th>Ask</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: maxRows }).map((_, i) => {
+            const bid = bids[i]
+            const ask = asks[i]
+            const isMid = mid && bid?.price === bestBid && ask?.price === bestAsk
+            return (
+              <tr key={i} className={isMid ? 'font-bold text-yellow-300' : ''}>
+                <td className="text-green-400">{bid ? formatNum(bid.remainingAmount) : ''}</td>
+                <td className="text-green-400">{bid ? formatNum(bid.price) : ''}</td>
+                <td className="text-red-400">{ask ? formatNum(ask.price) : ''}</td>
+                <td className="text-red-400">{ask ? formatNum(ask.remainingAmount) : ''}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
 export function ClobInitialize() {
   const { initializeOrderbook } = useClobProgram()
@@ -142,10 +192,13 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
   const [side, setSide] = useState<number>(0) // 0 for buy, 1 for sell
   const [price, setPrice] = useState<string>('')
   const [amount, setAmount] = useState<string>('')
+  const [sliderValue, setSliderValue] = useState<number>(50)
   const [depositBaseAmount, setDepositBaseAmount] = useState<string>('')
   const [depositQuoteAmount, setDepositQuoteAmount] = useState<string>('')
   const [withdrawBaseAmount, setWithdrawBaseAmount] = useState<string>('')
   const [withdrawQuoteAmount, setWithdrawQuoteAmount] = useState<string>('')
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [modalTab, setModalTab] = useState<'deposit' | 'withdraw'>('deposit')
 
   const baseTokenMint = useMemo(() => {
     if (orderbookQuery.data) {
@@ -200,128 +253,149 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
   return orderbookQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
   ) : (
-    <Card>
-      <CardHeader>
-        <CardTitle>Orderbook</CardTitle>
-        <CardDescription>
-          Address: <ExplorerLink path={`account/${orderBookAddress}`} label={ellipsify(orderBookAddress.toString())} />
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Create Order Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Create Order</h3>
-            <RadioGroup defaultValue="0" className="flex space-x-4" onValueChange={(value) => setSide(parseInt(value))}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="0" id="buy" />
-                <Label htmlFor="buy">Buy</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="1" id="sell" />
-                <Label htmlFor="sell">Sell</Label>
-              </div>
-            </RadioGroup>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
-                <Input 
-                  id="price" 
-                  placeholder="Enter price" 
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  type="number"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <Input 
-                  id="amount" 
-                  placeholder="Enter amount" 
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  type="number"
-                />
-              </div>
-            </div>
-            <Button 
-              onClick={handleCreateOrder} 
-              disabled={createOrderMutation.isPending || !price || !amount}
-              className="w-full"
-            >
-              Create Order {createOrderMutation.isPending && '...'}
-            </Button>
-          </div>
+    <div className="flex gap-8">
+      {/* Left: Orderbook Table */}
+      <div className="flex-1">
+        <OrderbookTable orderbook={orderbookQuery.data} />
+      </div>
 
-          {/* Deposit Balance Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Deposit Balance</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="depositBaseAmount">Base Amount</Label>
-                <Input 
-                  id="depositBaseAmount" 
-                  placeholder="Enter base amount" 
-                  value={depositBaseAmount}
-                  onChange={(e) => setDepositBaseAmount(e.target.value)}
-                  type="number"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="depositQuoteAmount">Quote Amount</Label>
-                <Input 
-                  id="depositQuoteAmount" 
-                  placeholder="Enter quote amount" 
-                  value={depositQuoteAmount}
-                  onChange={(e) => setDepositQuoteAmount(e.target.value)}
-                  type="number"
-                />
-              </div>
-            </div>
-            <Button 
-              onClick={handleDepositBalance} 
-              disabled={depositBalanceMutation.isPending || (!depositBaseAmount && !depositQuoteAmount)}
-              className="w-full"
-            >
-              Deposit {depositBalanceMutation.isPending && '...'}
-            </Button>
-          </div>
-
-          {/* Withdraw Funds Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Withdraw Funds</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="withdrawBaseAmount">Base Amount</Label>
-                <Input 
-                  id="withdrawBaseAmount" 
-                  placeholder="Enter base amount" 
-                  value={withdrawBaseAmount}
-                  onChange={(e) => setWithdrawBaseAmount(e.target.value)}
-                  type="number"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="withdrawQuoteAmount">Quote Amount</Label>
-                <Input 
-                  id="withdrawQuoteAmount" 
-                  placeholder="Enter quote amount" 
-                  value={withdrawQuoteAmount}
-                  onChange={(e) => setWithdrawQuoteAmount(e.target.value)}
-                  type="number"
-                />
-              </div>
-            </div>
-            <Button 
-              onClick={handleWithdrawFunds} 
-              disabled={withdrawFundsMutation.isPending || (!withdrawBaseAmount && !withdrawQuoteAmount)}
-              className="w-full"
-            >
-              Withdraw {withdrawFundsMutation.isPending && '...'}
-            </Button>
-          </div>
+      {/* Right: Order Form */}
+      <div className="w-[350px] bg-[#18181b] rounded-lg p-6 flex flex-col gap-4">
+        {/* Limit/Market Toggle */}
+        <div className="flex gap-2 mb-2">
+          <Button variant="secondary" className="flex-1">Limit</Button>
+          <Button variant="ghost" className="flex-1">Market</Button>
         </div>
-      </CardContent>
-    </Card>
+        {/* Buy/Sell Toggle */}
+        <div className="flex gap-2 mb-2">
+          <Button 
+            className={`flex-1 ${side === 0 ? 'bg-green-500 text-white' : ''}`}
+            onClick={() => setSide(0)}
+          >Buy</Button>
+          <Button 
+            className={`flex-1 border border-red-500 ${side === 1 ? 'bg-red-500 text-white' : ''}`}
+            onClick={() => setSide(1)}
+          >Sell</Button>
+        </div>
+        {/* Price Input */}
+        <div>
+          <Label>Buy Price / Limit Price</Label>
+          <Input 
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            placeholder="0.00"
+            type="number"
+            className="mt-1"
+          />
+        </div>
+        {/* Amount Input & Slider */}
+        <div>
+          <Label>You Pay <span className="float-right">{sliderValue}%</span></Label>
+          <input 
+            type="range" 
+            min={0} 
+            max={100} 
+            value={sliderValue} 
+            onChange={(e) => setSliderValue(Number(e.target.value))}
+            className="w-full my-2"
+          />
+          <Input 
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="0.00"
+            type="number"
+          />
+        </div>
+        {/* You Receive */}
+        <div>
+          <Label>You Receive</Label>
+          <Input 
+            value={amount ? (Number(amount) * Number(price) || 0) : ''}
+            readOnly
+            placeholder="0.00"
+          />
+        </div>
+        {/* Buy/Sell Button */}
+        <Button 
+          onClick={handleCreateOrder}
+          disabled={createOrderMutation.isPending || !price || !amount}
+          className={`w-full ${side === 0 ? 'bg-green-500' : 'bg-red-500'}`}
+        >
+          {side === 0 ? 'Buy' : 'Sell'}
+        </Button>
+        {/* Deposit Funds Button */}
+        <Button 
+          variant="outline"
+          className="w-full"
+          onClick={() => { setShowDepositModal(true); setModalTab('deposit') }}
+        >
+          Deposit Funds
+        </Button>
+      </div>
+
+      {/* Deposit/Withdraw Modal */}
+      <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              <div className="flex gap-4">
+                <button 
+                  className={modalTab === 'deposit' ? 'font-bold' : ''}
+                  onClick={() => setModalTab('deposit')}
+                >Deposit</button>
+                <button 
+                  className={modalTab === 'withdraw' ? 'font-bold' : ''}
+                  onClick={() => setModalTab('withdraw')}
+                >Withdraw</button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          {modalTab === 'deposit' ? (
+            <div className="space-y-4">
+              <Label>Base Amount</Label>
+              <Input 
+                value={depositBaseAmount}
+                onChange={e => setDepositBaseAmount(e.target.value)}
+                type="number"
+              />
+              <Label>Quote Amount</Label>
+              <Input 
+                value={depositQuoteAmount}
+                onChange={e => setDepositQuoteAmount(e.target.value)}
+                type="number"
+              />
+              <Button 
+                onClick={handleDepositBalance}
+                disabled={depositBalanceMutation.isPending || (!depositBaseAmount && !depositQuoteAmount)}
+                className="w-full"
+              >Deposit</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Label>Base Amount</Label>
+              <Input 
+                value={withdrawBaseAmount}
+                onChange={e => setWithdrawBaseAmount(e.target.value)}
+                type="number"
+              />
+              <Label>Quote Amount</Label>
+              <Input 
+                value={withdrawQuoteAmount}
+                onChange={e => setWithdrawQuoteAmount(e.target.value)}
+                type="number"
+              />
+              <Button 
+                onClick={handleWithdrawFunds}
+                disabled={withdrawFundsMutation.isPending || (!withdrawBaseAmount && !withdrawQuoteAmount)}
+                className="w-full"
+              >Withdraw</Button>
+            </div>
+          )}
+          <DialogClose asChild>
+            <Button variant="ghost" className="w-full mt-2">Close</Button>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 } 
