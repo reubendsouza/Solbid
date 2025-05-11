@@ -11,26 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 // import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAnchorProvider } from '../solana/solana-provider'
-import * as anchor from '@coral-xyz/anchor'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog'
-
-const RadioGroup = ({ defaultValue, className, onValueChange, children }: any) => (
-  <div className={className}>
-    {children}
-  </div>
-);
-
-const RadioGroupItem = ({ value, id }: any) => (
-  <input 
-    type="radio" 
-    value={value} 
-    id={id} 
-    name="orderSide" 
-    onChange={(e) => e.target.checked && e.target.value} 
-    defaultChecked={value === "0"}
-  />
-);
 
 // Helper to format numbers
 const formatNum = (n: number | string, decimals = 2) => {
@@ -39,13 +21,7 @@ const formatNum = (n: number | string, decimals = 2) => {
   return num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 }
 
-function getHeatmapColor(value: number, max: number, color: string) {
-  // Returns a background color with opacity based on value/max
-  if (!max || !value) return 'transparent'
-  const opacity = Math.max(0.1, Math.min(0.7, value / max))
-  return `${color}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}` // e.g. #00ff0011
-}
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any`  `
 function OrderbookTable({ orderbook }: { orderbook: any }) {
   // Extract and sort orders
   const bids = [...(orderbook?.buys || [])].sort((a, b) => Number(b.price) - Number(a.price))
@@ -276,13 +252,15 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       const orders = side === 0 ? orderbookQuery.data?.buys : orderbookQuery.data?.sells
       if (!orders) return
       // Find the latest order by the current user
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any`  `
       const myOrders = orders.filter((o: any) => o.owner === provider.publicKey?.toString())
       if (myOrders.length === 0) return
       // Assume the latest order is the one just created
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any`  `
       const latestOrder = myOrders.reduce((a: any, b: any) => (a.timestamp > b.timestamp ? a : b))
       if (latestOrder && latestOrder.id) {
         matchOrderMutation.mutateAsync({
-          orderId: latestOrder.id,
+          orderId: latestOrder.id.toNumber(),
           baseTokenMint,
           quoteTokenMint,
         })
