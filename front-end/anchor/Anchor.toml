@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-clob = "J5VexPAVTNy3pPX4WkGj3xwtitEMPKvSSVGbBas3Mv6X"
+counter = "FqzkXZdwYjurnUKetJCAvaUw5WAqbwzU6gZEwydeEfqS"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,4 +16,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "npx tsx create-codama-client.ts; npx tsx --test --test-reporter=spec --no-warnings tests/*.ts"
+test = "../node_modules/.bin/jest --preset ts-jest"

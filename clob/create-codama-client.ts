@@ -1,6 +1,6 @@
 // From https://solana.stackexchange.com/questions/16703/can-anchor-client-be-used-with-solana-web3-js-2-0rc
 import { createFromRoot } from "codama";
-import { rootNodeFromAnchor } from "@codama/nodes-from-anchor";
+import { AnchorIdl, rootNodeFromAnchor } from "@codama/nodes-from-anchor";
 import { renderJavaScriptVisitor } from "@codama/renderers";
 import path from "path";
 import { promises as fs } from "fs";
@@ -20,7 +20,8 @@ const loadJSON = async (...pathSegments: Array<string>) => {
 // Instantiate Codama
 const idl = await loadJSON("target", "idl", "clob.json");
 
-const codama = createFromRoot(rootNodeFromAnchor(idl));
+const rootNode = rootNodeFromAnchor(idl  as AnchorIdl);
+const codama = createFromRoot(rootNode);
 
 // Render JavaScript.
 const generatedPath = path.join("dist", "js-client");
