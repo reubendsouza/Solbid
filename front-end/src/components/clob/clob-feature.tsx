@@ -71,7 +71,7 @@ export default function ClobFeature() {
   return (
     <div>
       <AppHero
-        title="Central Limit Order Book (CLOB)"
+        title="Solbid"
         subtitle="Create and manage orderbooks for trading tokens"
       >
         <p className="mb-6">
