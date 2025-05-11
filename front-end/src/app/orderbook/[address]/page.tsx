@@ -26,7 +26,7 @@ export default function OrderbookPage() {
         <p className="mb-6">
           Address: <ExplorerLink path={`account/${address}`} label={ellipsify(address)} />
         </p>
-        <div className="flex gap-4 mb-6">
+        <div className="flex justify-center w-full mb-6">
           <Button onClick={() => router.push('/orderbooks')}>Back to All Orderbooks</Button>
         </div>
       </AppHero>

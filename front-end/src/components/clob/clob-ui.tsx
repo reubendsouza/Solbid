@@ -39,39 +39,80 @@ const formatNum = (n: number | string, decimals = 2) => {
   return num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 }
 
+function getHeatmapColor(value: number, max: number, color: string) {
+  // Returns a background color with opacity based on value/max
+  if (!max || !value) return 'transparent'
+  const opacity = Math.max(0.1, Math.min(0.7, value / max))
+  return `${color}${Math.floor(opacity * 255).toString(16).padStart(2, '0')}` // e.g. #00ff0011
+}
+
 function OrderbookTable({ orderbook }: { orderbook: any }) {
   // Extract and sort orders
   const bids = [...(orderbook?.buys || [])].sort((a, b) => Number(b.price) - Number(a.price))
   const asks = [...(orderbook?.sells || [])].sort((a, b) => Number(a.price) - Number(b.price))
   const maxRows = Math.max(bids.length, asks.length)
 
-  // Find mid price
-  const bestBid = bids[0]?.price
-  const bestAsk = asks[0]?.price
-  const mid = bestBid && bestAsk ? (Number(bestBid) + Number(bestAsk)) / 2 : null
+  // Find max amounts for heatmap
+  const maxBidAmount = Math.max(...bids.map(b => Number(b.remainingAmount) || 0), 0)
+  const maxAskAmount = Math.max(...asks.map(a => Number(a.remainingAmount) || 0), 0)
 
   return (
-    <div className="bg-black rounded-lg p-4 w-full">
-      <table className="w-full text-sm">
+    <div className="bg-[#0a0c16] rounded-lg p-4 w-full">
+      <table className="w-full text-sm font-mono">
         <thead>
-          <tr className="text-left text-gray-400">
-            <th>Amount</th>
-            <th>Bid</th>
-            <th>Ask</th>
-            <th>Amount</th>
+          <tr className="text-gray-400">
+            <th className="px-2 text-right">Amount</th>
+            <th className="px-2 text-right">Bid</th>
+            {/* Separator */}
+            <th className="px-1"></th>
+            <th className="px-2 text-left">Ask</th>
+            <th className="px-2 text-left">Amount</th>
           </tr>
         </thead>
         <tbody>
           {Array.from({ length: maxRows }).map((_, i) => {
             const bid = bids[i]
             const ask = asks[i]
-            const isMid = mid && bid?.price === bestBid && ask?.price === bestAsk
             return (
-              <tr key={i} className={isMid ? 'font-bold text-yellow-300' : ''}>
-                <td className="text-green-400">{bid ? formatNum(bid.remainingAmount) : ''}</td>
-                <td className="text-green-400">{bid ? formatNum(bid.price) : ''}</td>
-                <td className="text-red-400">{ask ? formatNum(ask.price) : ''}</td>
-                <td className="text-red-400">{ask ? formatNum(ask.remainingAmount) : ''}</td>
+              <tr key={i}>
+                {/* Bid Amount (right-aligned, no heatmap) */}
+                <td className="px-2 text-green-300 font-semibold text-right">
+                  {bid ? formatNum(bid.remainingAmount) : ''}
+                </td>
+                {/* Bid Price (right-aligned, heatmap starts here and extends left) */}
+                <td
+                  className="px-2 text-green-400 font-bold text-right relative"
+                  style={{
+                    background: bid
+                      ? `linear-gradient(to left, #16a34a${Math.floor(
+                          ((Number(bid.remainingAmount) || 0) / maxBidAmount) * 128 + 32
+                        ).toString(16)}, transparent 80%)`
+                      : undefined,
+                  }}
+                >
+                  {bid ? formatNum(bid.price) : ''}
+                </td>
+                {/* Separator */}
+                <td className="px-1">
+                  <div className="h-5 border-l border-gray-700 mx-auto" style={{ width: 0 }}></div>
+                </td>
+                {/* Ask Price (left-aligned, heatmap starts here and extends right) */}
+                <td
+                  className="px-2 text-red-400 font-bold text-left relative"
+                  style={{
+                    background: ask
+                      ? `linear-gradient(to right, #dc2626${Math.floor(
+                          ((Number(ask.remainingAmount) || 0) / maxAskAmount) * 128 + 32
+                        ).toString(16)}, transparent 80%)`
+                      : undefined,
+                  }}
+                >
+                  {ask ? formatNum(ask.price) : ''}
+                </td>
+                {/* Ask Amount (left-aligned, no heatmap) */}
+                <td className="px-2 text-red-300 font-semibold text-left">
+                  {ask ? formatNum(ask.remainingAmount) : ''}
+                </td>
               </tr>
             )
           })}
@@ -101,40 +142,42 @@ export function ClobInitialize() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Initialize Orderbook</CardTitle>
-        <CardDescription>Create a new orderbook for trading tokens</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="baseTokenMint">Base Token Mint</Label>
-            <Input 
-              id="baseTokenMint" 
-              placeholder="Enter base token mint address" 
-              value={baseTokenMint}
-              onChange={(e) => setBaseTokenMint(e.target.value)}
-            />
+    <div className="flex justify-center w-full">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Initialize Orderbook</CardTitle>
+          <CardDescription>Create a new orderbook for trading tokens</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="baseTokenMint">Base Token Mint</Label>
+              <Input 
+                id="baseTokenMint" 
+                placeholder="Enter base token mint address" 
+                value={baseTokenMint}
+                onChange={(e) => setBaseTokenMint(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="quoteTokenMint">Quote Token Mint</Label>
+              <Input 
+                id="quoteTokenMint" 
+                placeholder="Enter quote token mint address" 
+                value={quoteTokenMint}
+                onChange={(e) => setQuoteTokenMint(e.target.value)}
+              />
+            </div>
+            <Button 
+              onClick={handleInitialize} 
+              disabled={initializeOrderbook.isPending || !baseTokenMint || !quoteTokenMint}
+            >
+              Initialize {initializeOrderbook.isPending && '...'}
+            </Button>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="quoteTokenMint">Quote Token Mint</Label>
-            <Input 
-              id="quoteTokenMint" 
-              placeholder="Enter quote token mint address" 
-              value={quoteTokenMint}
-              onChange={(e) => setQuoteTokenMint(e.target.value)}
-            />
-          </div>
-          <Button 
-            onClick={handleInitialize} 
-            disabled={initializeOrderbook.isPending || !baseTokenMint || !quoteTokenMint}
-          >
-            Initialize {initializeOrderbook.isPending && '...'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

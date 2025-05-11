@@ -39,7 +39,7 @@ export default function ClobFeature() {
           <p className="mb-6">
             <ExplorerLink path={`account/${programId}`} label={ellipsify(programId.toString())} />
           </p>
-          <div className="flex gap-4 mb-6">
+          <div className="flex justify-center w-full mb-6">
             <Button onClick={() => router.push('/orderbooks')}>View All Orderbooks</Button>
           </div>
         </AppHero>
@@ -58,7 +58,7 @@ export default function ClobFeature() {
           <p className="mb-6">
             <ExplorerLink path={`account/${programId}`} label={ellipsify(programId.toString())} />
           </p>
-          <div className="flex gap-4 mb-6">
+          <div className="flex justify-center w-full mb-6">
             <Button onClick={() => router.push('/create-orderbook')}>Create New Orderbook</Button>
           </div>
         </AppHero>
@@ -79,7 +79,9 @@ export default function ClobFeature() {
         </p>
         <div className="flex gap-4">
           <Button onClick={() => router.push('/create-orderbook')}>Create New Orderbook</Button>
-          <Button onClick={() => router.push('/orderbooks')} variant="outline">View All Orderbooks</Button>
+          <div className="flex justify-center w-full mb-6">
+            <Button onClick={() => router.push('/orderbooks')} variant="outline">View All Orderbooks</Button>
+          </div>
         </div>
       </AppHero>
     </div>
