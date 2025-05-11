@@ -186,19 +186,19 @@ export function ClobOrderbookList() {
 }
 
 export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: PublicKey }) {
-  const { orderbookQuery, createOrderMutation, depositBalanceMutation, withdrawFundsMutation } = useClobOrderbook({
+  const { orderbookQuery, createOrderMutation, depositBalanceMutation, withdrawFundsMutation, matchOrderMutation } = useClobOrderbook({
     orderBookAddress: new PublicKey(orderBookAddress),
   })
   const [side, setSide] = useState<number>(0) // 0 for buy, 1 for sell
   const [price, setPrice] = useState<string>('')
   const [amount, setAmount] = useState<string>('')
-  const [sliderValue, setSliderValue] = useState<number>(50)
   const [depositBaseAmount, setDepositBaseAmount] = useState<string>('')
   const [depositQuoteAmount, setDepositQuoteAmount] = useState<string>('')
   const [withdrawBaseAmount, setWithdrawBaseAmount] = useState<string>('')
   const [withdrawQuoteAmount, setWithdrawQuoteAmount] = useState<string>('')
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [modalTab, setModalTab] = useState<'deposit' | 'withdraw'>('deposit')
+  const provider = useAnchorProvider()
 
   const baseTokenMint = useMemo(() => {
     if (orderbookQuery.data) {
@@ -218,7 +218,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
 
   const handleCreateOrder = async () => {
     if (!baseTokenMint || !quoteTokenMint) return
-    
+
     await createOrderMutation.mutateAsync({
       side,
       price: parseFloat(price),
@@ -226,6 +226,25 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       baseTokenMint,
       quoteTokenMint,
     })
+
+    // After order is created, try to find the new order and match it
+    // Wait for orderbookQuery to refetch (it is refetched on createOrderMutation success)
+    setTimeout(() => {
+      const orders = side === 0 ? orderbookQuery.data?.buys : orderbookQuery.data?.sells
+      if (!orders) return
+      // Find the latest order by the current user
+      const myOrders = orders.filter((o: any) => o.owner === provider.publicKey?.toString())
+      if (myOrders.length === 0) return
+      // Assume the latest order is the one just created
+      const latestOrder = myOrders.reduce((a: any, b: any) => (a.timestamp > b.timestamp ? a : b))
+      if (latestOrder && latestOrder.id) {
+        matchOrderMutation.mutateAsync({
+          orderId: latestOrder.id.toNumber(),
+          baseTokenMint,
+          quoteTokenMint,
+        })
+      }
+    }, 1000) // Wait 1s for orderbookQuery to update (tweak as needed)
   }
 
   const handleDepositBalance = async () => {
@@ -253,149 +272,151 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
   return orderbookQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
   ) : (
-    <div className="flex gap-8">
-      {/* Left: Orderbook Table */}
-      <div className="flex-1">
-        <OrderbookTable orderbook={orderbookQuery.data} />
+    <>
+      <div className="w-full flex flex-col items-center mb-4">
+        <div className="text-lg text-gray-300">
+          Trading Pair:
+          <span className="ml-2 font-bold text-white">
+            {baseTokenMint ? ellipsify(baseTokenMint.toString()) : '...'} / {quoteTokenMint ? ellipsify(quoteTokenMint.toString()) : '...'}
+          </span>
+        </div>
       </div>
+      <div className="flex gap-8">
+        {/* Left: Orderbook Table */}
+        <div className="flex-1">
+          <OrderbookTable orderbook={orderbookQuery.data} />
+        </div>
 
-      {/* Right: Order Form */}
-      <div className="w-[350px] bg-[#18181b] rounded-lg p-6 flex flex-col gap-4">
-        {/* Limit/Market Toggle */}
-        <div className="flex gap-2 mb-2">
-          <Button variant="secondary" className="flex-1">Limit</Button>
-          <Button variant="ghost" className="flex-1">Market</Button>
-        </div>
-        {/* Buy/Sell Toggle */}
-        <div className="flex gap-2 mb-2">
+        {/* Right: Order Form */}
+        <div className="w-[350px] bg-[#18181b] rounded-lg p-6 flex flex-col gap-4">
+          {/* Limit/Market Toggle */}
+          <div className="flex gap-2 mb-2">
+            <Button variant="secondary" className="flex-1">Limit</Button>
+            <Button variant="ghost" className="flex-1">Market</Button>
+          </div>
+          {/* Buy/Sell Toggle */}
+          <div className="flex gap-2 mb-2">
+            <Button 
+              className={`flex-1 ${side === 0 ? 'bg-green-500 text-white' : ''}`}
+              onClick={() => setSide(0)}
+            >Buy</Button>
+            <Button 
+              className={`flex-1 border border-red-500 ${side === 1 ? 'bg-red-500 text-white' : ''}`}
+              onClick={() => setSide(1)}
+            >Sell</Button>
+          </div>
+          {/* Price Input */}
+          <div>
+            <Label>{side === 0 ? 'Buy Price' : 'Sell Price'} / Limit Price</Label>
+            <Input 
+              value={price}
+              onChange={e => setPrice(e.target.value)}
+              placeholder="0.00"
+              type="number"
+              className="mt-1"
+            />
+          </div>
+          {/* Amount Input */}
+          <div>
+            <Label>Amount <span className="float-right"></span></Label>
+            <Input 
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="0.00"
+              type="number"
+            />
+          </div>
+          {/* You Pay/Receive */}
+          <div>
+            <Label>{side === 0 ? 'You Pay' : 'You Receive'}</Label>
+            <Input 
+              value={amount ? (Number(amount) * Number(price) || 0) : ''}
+              readOnly
+              placeholder="0.00"
+            />
+          </div>
+          {/* Buy/Sell Button */}
           <Button 
-            className={`flex-1 ${side === 0 ? 'bg-green-500 text-white' : ''}`}
-            onClick={() => setSide(0)}
-          >Buy</Button>
+            onClick={handleCreateOrder}
+            disabled={createOrderMutation.isPending || !price || !amount}
+            className={`w-full ${side === 0 ? 'bg-green-500' : 'bg-red-500'}`}
+          >
+            {side === 0 ? 'Buy' : 'Sell'}
+          </Button>
+          {/* Deposit Funds Button */}
           <Button 
-            className={`flex-1 border border-red-500 ${side === 1 ? 'bg-red-500 text-white' : ''}`}
-            onClick={() => setSide(1)}
-          >Sell</Button>
+            variant="outline"
+            className="w-full"
+            onClick={() => { setShowDepositModal(true); setModalTab('deposit') }}
+          >
+            Deposit Funds
+          </Button>
         </div>
-        {/* Price Input */}
-        <div>
-          <Label>Buy Price / Limit Price</Label>
-          <Input 
-            value={price}
-            onChange={e => setPrice(e.target.value)}
-            placeholder="0.00"
-            type="number"
-            className="mt-1"
-          />
-        </div>
-        {/* Amount Input & Slider */}
-        <div>
-          <Label>You Pay <span className="float-right">{sliderValue}%</span></Label>
-          <input 
-            type="range" 
-            min={0} 
-            max={100} 
-            value={sliderValue} 
-            onChange={(e) => setSliderValue(Number(e.target.value))}
-            className="w-full my-2"
-          />
-          <Input 
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            placeholder="0.00"
-            type="number"
-          />
-        </div>
-        {/* You Receive */}
-        <div>
-          <Label>You Receive</Label>
-          <Input 
-            value={amount ? (Number(amount) * Number(price) || 0) : ''}
-            readOnly
-            placeholder="0.00"
-          />
-        </div>
-        {/* Buy/Sell Button */}
-        <Button 
-          onClick={handleCreateOrder}
-          disabled={createOrderMutation.isPending || !price || !amount}
-          className={`w-full ${side === 0 ? 'bg-green-500' : 'bg-red-500'}`}
-        >
-          {side === 0 ? 'Buy' : 'Sell'}
-        </Button>
-        {/* Deposit Funds Button */}
-        <Button 
-          variant="outline"
-          className="w-full"
-          onClick={() => { setShowDepositModal(true); setModalTab('deposit') }}
-        >
-          Deposit Funds
-        </Button>
-      </div>
 
-      {/* Deposit/Withdraw Modal */}
-      <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              <div className="flex gap-4">
-                <button 
-                  className={modalTab === 'deposit' ? 'font-bold' : ''}
-                  onClick={() => setModalTab('deposit')}
-                >Deposit</button>
-                <button 
-                  className={modalTab === 'withdraw' ? 'font-bold' : ''}
-                  onClick={() => setModalTab('withdraw')}
-                >Withdraw</button>
+        {/* Deposit/Withdraw Modal */}
+        <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                <div className="flex gap-4">
+                  <button 
+                    className={modalTab === 'deposit' ? 'font-bold' : ''}
+                    onClick={() => setModalTab('deposit')}
+                  >Deposit</button>
+                  <button 
+                    className={modalTab === 'withdraw' ? 'font-bold' : ''}
+                    onClick={() => setModalTab('withdraw')}
+                  >Withdraw</button>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+            {modalTab === 'deposit' ? (
+              <div className="space-y-4">
+                <Label>Base Amount</Label>
+                <Input 
+                  value={depositBaseAmount}
+                  onChange={e => setDepositBaseAmount(e.target.value)}
+                  type="number"
+                />
+                <Label>Quote Amount</Label>
+                <Input 
+                  value={depositQuoteAmount}
+                  onChange={e => setDepositQuoteAmount(e.target.value)}
+                  type="number"
+                />
+                <Button 
+                  onClick={handleDepositBalance}
+                  disabled={depositBalanceMutation.isPending || (!depositBaseAmount && !depositQuoteAmount)}
+                  className="w-full"
+                >Deposit</Button>
               </div>
-            </DialogTitle>
-          </DialogHeader>
-          {modalTab === 'deposit' ? (
-            <div className="space-y-4">
-              <Label>Base Amount</Label>
-              <Input 
-                value={depositBaseAmount}
-                onChange={e => setDepositBaseAmount(e.target.value)}
-                type="number"
-              />
-              <Label>Quote Amount</Label>
-              <Input 
-                value={depositQuoteAmount}
-                onChange={e => setDepositQuoteAmount(e.target.value)}
-                type="number"
-              />
-              <Button 
-                onClick={handleDepositBalance}
-                disabled={depositBalanceMutation.isPending || (!depositBaseAmount && !depositQuoteAmount)}
-                className="w-full"
-              >Deposit</Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Label>Base Amount</Label>
-              <Input 
-                value={withdrawBaseAmount}
-                onChange={e => setWithdrawBaseAmount(e.target.value)}
-                type="number"
-              />
-              <Label>Quote Amount</Label>
-              <Input 
-                value={withdrawQuoteAmount}
-                onChange={e => setWithdrawQuoteAmount(e.target.value)}
-                type="number"
-              />
-              <Button 
-                onClick={handleWithdrawFunds}
-                disabled={withdrawFundsMutation.isPending || (!withdrawBaseAmount && !withdrawQuoteAmount)}
-                className="w-full"
-              >Withdraw</Button>
-            </div>
-          )}
-          <DialogClose asChild>
-            <Button variant="ghost" className="w-full mt-2">Close</Button>
-          </DialogClose>
-        </DialogContent>
-      </Dialog>
-    </div>
+            ) : (
+              <div className="space-y-4">
+                <Label>Base Amount</Label>
+                <Input 
+                  value={withdrawBaseAmount}
+                  onChange={e => setWithdrawBaseAmount(e.target.value)}
+                  type="number"
+                />
+                <Label>Quote Amount</Label>
+                <Input 
+                  value={withdrawQuoteAmount}
+                  onChange={e => setWithdrawQuoteAmount(e.target.value)}
+                  type="number"
+                />
+                <Button 
+                  onClick={handleWithdrawFunds}
+                  disabled={withdrawFundsMutation.isPending || (!withdrawBaseAmount && !withdrawQuoteAmount)}
+                  className="w-full"
+                >Withdraw</Button>
+              </div>
+            )}
+            <DialogClose asChild>
+              <Button variant="ghost" className="w-full mt-2">Close</Button>
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   )
 } 

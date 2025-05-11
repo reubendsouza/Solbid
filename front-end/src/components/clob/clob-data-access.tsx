@@ -182,6 +182,33 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
     onError: () => toast.error('Failed to withdraw funds'),
   })
 
+  const matchOrderMutation = useMutation({
+    mutationKey: ['clob', 'match-order', { cluster, orderBookAddress }],
+    mutationFn: async ({
+      orderId,
+      baseTokenMint,
+      quoteTokenMint,
+    }: {
+      orderId: number,
+      baseTokenMint: PublicKey,
+      quoteTokenMint: PublicKey,
+    }) => {
+      return program.methods
+        .matchOrder(new anchor.BN(orderId))
+        .accounts({
+          user: provider.publicKey,
+          baseTokenMint,
+          quoteTokenMint,
+        })
+        .rpc()
+    },
+    onSuccess: (tx) => {
+      transactionToast(tx)
+      return orderbookQuery.refetch()
+    },
+    onError: () => toast.error('Failed to match order'),
+  })
+
   return {
     orderbookQuery,
     createOrderMutation,
@@ -189,5 +216,6 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
     withdrawFundsMutation,
     delegateOrderbookMutation,
     undelegateOrderbookMutation,
+    matchOrderMutation,
   }
 }

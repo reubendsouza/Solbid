@@ -1,11 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_interface::{Mint, TokenAccount, TokenInterface},
-};
+use anchor_spl::token_interface::Mint;
 
 use crate::state::{Orderbook, Side};
-use crate::instructions::shared::transfer_tokens;
 use crate::error::ErrorCode;
 
 #[derive(Accounts)]
@@ -16,45 +12,12 @@ pub struct MatchOrder<'info> {
     pub base_token_mint: InterfaceAccount<'info, Mint>,
     pub quote_token_mint: InterfaceAccount<'info, Mint>,
 
-    #[account(init_if_needed,
-        payer = user,
-        associated_token::mint = base_token_mint,
-        associated_token::authority = user,
-        associated_token::token_program = token_program,
-        )]
-    pub user_base_account: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(init_if_needed,
-        payer = user,
-        associated_token::mint = quote_token_mint,
-        associated_token::authority = user,
-        associated_token::token_program = token_program,
-        )]
-    pub user_quote_account: InterfaceAccount<'info, TokenAccount>,
-
     #[account(mut,
         seeds = [b"orderbook", base_token_mint.key().as_ref(), quote_token_mint.key().as_ref()],
         bump = order_book.bump
     )]
     pub order_book: Account<'info, Orderbook>,
     
-    #[account(mut,
-        associated_token::mint = base_token_mint,
-        associated_token::authority = order_book,
-        associated_token::token_program = token_program,
-        )]
-    pub base_vault: InterfaceAccount<'info, TokenAccount>,
-
-    #[account(mut,
-        associated_token::mint = quote_token_mint,
-        associated_token::authority = order_book,
-        associated_token::token_program = token_program,
-        )]
-    pub quote_vault: InterfaceAccount<'info, TokenAccount>,
-    
-    
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
 
@@ -140,24 +103,9 @@ pub fn handle_match_order(
         Side::Sell => order_book.sells.remove(order_index),
     };
 
-    // Before the match statement, get the account info and bump
-    let order_book_info = order_book.to_account_info();
-    let order_book_bump = order_book.bump;
-
     // Match the order - Inline implementation instead of separate function
     let mut filled_amount: u64 = 0;
     let mut remaining_amount: u64 = order.remaining_amount;
-
-    // Prepare PDA signer seeds
-    let base_mint_key = context.accounts.base_token_mint.key();
-    let quote_mint_key = context.accounts.quote_token_mint.key();
-    let account_seeds = [
-        b"orderbook",
-        base_mint_key.as_ref(),
-        quote_mint_key.as_ref(),
-        &[order_book_bump],
-    ];
-    let signers_seeds = Some(&account_seeds[..]);
 
     match order.side {
         Side::Buy => {
@@ -176,7 +124,6 @@ pub fn handle_match_order(
                     let match_amount = remaining_amount.min(ask.remaining_amount);
                     
                     if match_amount > 0 {
-
                         // Update the order amounts
                         ask.remaining_amount = ask.remaining_amount.checked_sub(match_amount)
                             .ok_or(ErrorCode::CalculationFailure)?;
@@ -185,29 +132,18 @@ pub fn handle_match_order(
                         filled_amount = filled_amount.checked_add(match_amount)
                             .ok_or(ErrorCode::CalculationFailure)?;
                         
-                        // Transfer base tokens from vault to buyer
-                        transfer_tokens(
-                            &context.accounts.base_vault,
-                            &context.accounts.user_base_account,
-                            &match_amount,
-                            &context.accounts.base_token_mint,
-                            &order_book_info,
-                            &context.accounts.token_program,
-                            signers_seeds,
-                        )?;
-                        
-                        // Calculate quote amount to transfer to seller
+                        // Calculate quote amount
                         let quote_amount = match_amount.checked_mul(ask.price)
                             .ok_or(ErrorCode::CalculationFailure)?;
                         
                         // Remove filled orders
                         let remaining_amount = ask.remaining_amount;
 
+                        // Update balances in the orderbook
                         order_book.add_balance(&user.key(), match_amount, 0)?;
                         order_book.subtract_balance(&user.key(), 0, quote_amount)?;
-
-                        // Instead of direct transfer, update the seller's balance
                         order_book.add_balance(&ask_owner, 0, quote_amount)?;
+                        order_book.subtract_balance(&ask_owner, match_amount, 0)?;
                         
                         if remaining_amount == 0 {
                             order_book.sells.remove(i);
@@ -247,17 +183,18 @@ pub fn handle_match_order(
                         filled_amount = filled_amount.checked_add(match_amount)
                             .ok_or(ErrorCode::CalculationFailure)?;
                         
-                        // Calculate quote amount to transfer to seller
+                        // Calculate quote amount
                         let quote_amount = match_amount.checked_mul(bid.price)
                             .ok_or(ErrorCode::CalculationFailure)?;
 
                         // Remove filled orders
                         let remaining_amount = bid.remaining_amount;
 
+                        // Update balances in the orderbook
                         order_book.add_balance(&user.key(), 0, quote_amount)?;
                         order_book.subtract_balance(&user.key(), match_amount, 0)?;
-
                         order_book.add_balance(&bid_owner, match_amount, 0)?;
+                        order_book.subtract_balance(&bid_owner, 0, quote_amount)?;
 
                         if remaining_amount == 0 {
                             order_book.buys.remove(i);
