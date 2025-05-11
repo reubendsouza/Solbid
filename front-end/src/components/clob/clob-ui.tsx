@@ -229,7 +229,7 @@ export function ClobOrderbookList() {
 }
 
 export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: PublicKey }) {
-  const { orderbookQuery, createOrderMutation, depositBalanceMutation, withdrawFundsMutation, matchOrderMutation } = useClobOrderbook({
+  const { orderbookQuery, createOrderMutation, depositBalanceMutation, withdrawFundsMutation, matchOrderMutation, delegateOrderbookMutation, undelegateOrderbookMutation } = useClobOrderbook({
     orderBookAddress: new PublicKey(orderBookAddress),
   })
   const [side, setSide] = useState<number>(0) // 0 for buy, 1 for sell
@@ -396,6 +396,38 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
             onClick={() => { setShowDepositModal(true); setModalTab('deposit') }}
           >
             Deposit Funds
+          </Button>
+          {/* Delegate to Rollup Button */}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              if (!baseTokenMint || !quoteTokenMint) return
+              delegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
+            }}
+            disabled={
+              delegateOrderbookMutation.isPending ||
+              !baseTokenMint ||
+              !quoteTokenMint
+            }
+          >
+            {delegateOrderbookMutation.isPending ? 'Delegating...' : 'Delegate to Rollup'}
+          </Button>
+          {/* Undelegate from Rollup Button */}
+          <Button
+            variant="outline"
+            className="w-full mt-2"
+            onClick={() => {
+              if (!baseTokenMint || !quoteTokenMint) return
+              undelegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
+            }}
+            disabled={
+              undelegateOrderbookMutation.isPending ||
+              !baseTokenMint ||
+              !quoteTokenMint
+            }
+          >
+            {undelegateOrderbookMutation.isPending ? 'Undelegating...' : 'Undelegate from Rollup'}
           </Button>
         </div>
 
