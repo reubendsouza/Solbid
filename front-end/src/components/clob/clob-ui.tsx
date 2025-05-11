@@ -239,7 +239,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       const latestOrder = myOrders.reduce((a: any, b: any) => (a.timestamp > b.timestamp ? a : b))
       if (latestOrder && latestOrder.id) {
         matchOrderMutation.mutateAsync({
-          orderId: latestOrder.id.toNumber(),
+          orderId: latestOrder.id,
           baseTokenMint,
           quoteTokenMint,
         })
@@ -292,7 +292,10 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
           {/* Limit/Market Toggle */}
           <div className="flex gap-2 mb-2">
             <Button variant="secondary" className="flex-1">Limit</Button>
-            <Button variant="ghost" className="flex-1">Market</Button>
+            <Button variant="ghost" className="flex-1 cursor-not-allowed opacity-70" disabled>
+              Market
+              <span className="ml-1 text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded-full">Soon</span>
+            </Button>
           </div>
           {/* Buy/Sell Toggle */}
           <div className="flex gap-2 mb-2">
