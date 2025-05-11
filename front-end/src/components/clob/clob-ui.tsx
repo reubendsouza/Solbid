@@ -21,7 +21,7 @@ const formatNum = (n: number | string, decimals = 2) => {
   return num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any`  `
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function OrderbookTable({ orderbook }: { orderbook: any }) {
   // Extract and sort orders
   const bids = [...(orderbook?.buys || [])].sort((a, b) => Number(b.price) - Number(a.price))
@@ -252,11 +252,11 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       const orders = side === 0 ? orderbookQuery.data?.buys : orderbookQuery.data?.sells
       if (!orders) return
       // Find the latest order by the current user
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any`  `
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const myOrders = orders.filter((o: any) => o.owner === provider.publicKey?.toString())
       if (myOrders.length === 0) return
       // Assume the latest order is the one just created
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any`  `
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const latestOrder = myOrders.reduce((a: any, b: any) => (a.timestamp > b.timestamp ? a : b))
       if (latestOrder && latestOrder.id) {
         matchOrderMutation.mutateAsync({
