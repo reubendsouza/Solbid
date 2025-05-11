@@ -28,3 +28,11 @@ Traditional on-chain trading suffers from high latency and costs. Solbid overcom
 - Support for multiple trading pairs
 - Transparent fee structure
 - User-friendly trading interface
+
+## Current Hackathon Implementation
+
+This hackathon version demonstrates the core functionality with the following parameters:
+- Support for up to 20 concurrent users and 20 open orders per orderbook
+- Focus on limit orders (market orders planned for future development)
+
+These constraints allow for a functional proof of concept while maintaining performance during the hackathon. Future versions will scale these limitations.
