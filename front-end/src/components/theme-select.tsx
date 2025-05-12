@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 export function ThemeSelect() {
-  const { setTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
+
+  React.useEffect(() => {
+    if (theme !== 'dark') {
+      setTheme('dark')
+    }
+  })
 
   return (
     <DropdownMenu>

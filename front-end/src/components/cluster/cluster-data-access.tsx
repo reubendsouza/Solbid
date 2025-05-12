@@ -34,6 +34,11 @@ export const defaultClusters: SolanaCluster[] = [
     endpoint: clusterApiUrl('testnet'),
     network: ClusterNetwork.Testnet,
   },
+  {
+    name: 'magicblock-devnet',
+    endpoint: 'https://devnet.magicblock.app',
+    network: ClusterNetwork.Custom,
+  },
 ]
 
 const clusterAtom = atomWithStorage<SolanaCluster>('solana-cluster', defaultClusters[0])
