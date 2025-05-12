@@ -377,35 +377,21 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
           </Button>
           {/* Delegate to Rollup Button */}
           <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              if (!baseTokenMint || !quoteTokenMint) return
-              delegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
-            }}
-            disabled={
-              delegateOrderbookMutation.isPending ||
-              !baseTokenMint ||
-              !quoteTokenMint
-            }
+            variant="ghost"
+            className="w-full cursor-not-allowed opacity-70"
+            disabled
           >
-            {delegateOrderbookMutation.isPending ? 'Delegating...' : 'Delegate to Rollup'}
+            Delegate to Rollup
+            <span className="ml-1 text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded-full">Soon</span>
           </Button>
           {/* Undelegate from Rollup Button */}
           <Button
-            variant="outline"
-            className="w-full mt-2"
-            onClick={() => {
-              if (!baseTokenMint || !quoteTokenMint) return
-              undelegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
-            }}
-            disabled={
-              undelegateOrderbookMutation.isPending ||
-              !baseTokenMint ||
-              !quoteTokenMint
-            }
+            variant="ghost"
+            className="w-full mt-2 cursor-not-allowed opacity-70"
+            disabled
           >
-            {undelegateOrderbookMutation.isPending ? 'Undelegating...' : 'Undelegate from Rollup'}
+            Undelegate from Rollup
+            <span className="ml-1 text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded-full">Soon</span>
           </Button>
         </div>
 
