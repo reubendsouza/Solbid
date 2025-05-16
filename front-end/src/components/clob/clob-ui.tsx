@@ -186,7 +186,11 @@ export function ClobOrderbookList() {
               onClick={() => router.push(`/orderbook/${orderbook.publicKey.toString()}`)}
             >
               <CardHeader>
-                <CardTitle>Orderbook</CardTitle>
+                <CardTitle>
+                  {orderbook.account?.baseAsset && orderbook.account?.quoteAsset
+                    ? `${ellipsify(orderbook.account.baseAsset.toString())} / ${ellipsify(orderbook.account.quoteAsset.toString())}`
+                    : 'Orderbook'}
+                </CardTitle>
                 <CardDescription>
                   Address: <ExplorerLink path={`account/${orderbook.publicKey}`} label={ellipsify(orderbook.publicKey.toString())} />
                 </CardDescription>
@@ -217,6 +221,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
   const [withdrawQuoteAmount, setWithdrawQuoteAmount] = useState<string>('')
   const [showDepositModal, setShowDepositModal] = useState(false)
   const [modalTab, setModalTab] = useState<'deposit' | 'withdraw'>('deposit')
+  const [isDelegated, setIsDelegated] = useState<boolean>(false)
   const provider = useAnchorProvider()
 
   const baseTokenMint = useMemo(() => {
@@ -245,6 +250,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       amount: parseFloat(amount),
       baseTokenMint,
       quoteTokenMint,
+      isDelegated: true,
     })
 
     console.log('createOrderMutation end: ', createOrderMutation);
@@ -266,6 +272,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
           orderId: latestOrder.id.toNumber(),
           baseTokenMint,
           quoteTokenMint,
+          isDelegated,
         })
         console.log('matchOrderMutation end: ', matchOrderMutation);
       }
@@ -292,6 +299,38 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       baseTokenMint,
       quoteTokenMint,
     })
+  }
+
+  const handleDelegate = async () => {
+    if (!baseTokenMint || !quoteTokenMint) return
+    try {
+      await delegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
+      // await updateDelegationStatusMutation.mutateAsync({
+      //   isDelegated: true,
+      //   baseTokenMint,
+      //   quoteTokenMint,
+      // })
+      setIsDelegated(true)
+    } catch (error) {
+      // Error handling is already in the mutation
+      console.error('Error delegating orderbook: ', error)
+    }
+  }
+
+  const handleUndelegate = async () => {
+    if (!baseTokenMint || !quoteTokenMint) return
+    try {
+      await undelegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
+      // await updateDelegationStatusMutation.mutateAsync({
+      //   isDelegated: false,
+      //   baseTokenMint,
+      //   quoteTokenMint,
+      // })
+      setIsDelegated(false)
+    } catch (error) {
+      // Error handling is already in the mutation
+      console.error('Error undelegating orderbook: ', error)
+    }
   }
 
   return orderbookQuery.isLoading ? (
@@ -383,10 +422,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => {
-              if (!baseTokenMint || !quoteTokenMint) return
-              delegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
-            }}
+            onClick={handleDelegate}
             disabled={
               delegateOrderbookMutation.isPending ||
               !baseTokenMint ||
@@ -399,10 +435,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
           <Button
             variant="outline"
             className="w-full mt-2"
-            onClick={() => {
-              if (!baseTokenMint || !quoteTokenMint) return
-              undelegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
-            }}
+            onClick={handleUndelegate}
             disabled={
               undelegateOrderbookMutation.isPending ||
               !baseTokenMint ||

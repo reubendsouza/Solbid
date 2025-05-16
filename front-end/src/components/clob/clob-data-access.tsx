@@ -11,7 +11,7 @@ import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
-import { AnchorProvider, Wallet } from '@coral-xyz/anchor'
+import { AnchorProvider } from '@coral-xyz/anchor'
 import { Connection } from '@solana/web3.js'
 
 export function useClobProgram() {
@@ -85,7 +85,7 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
   console.log('orderBooks: ', orderBooks);
   const orderbookQuery = useQuery({
     queryKey: ['clob', 'fetch', { cluster, orderBookAddress }],
-    queryFn: () => fetchOrderbookFallback(orderBookAddress),
+    queryFn: () => program.account.orderbook.fetch(orderBookAddress),
   })
 
   // Example: create an ER provider (adjust endpoint and wallet as needed)
@@ -109,8 +109,9 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
       amount: number,
       baseTokenMint: PublicKey,
       quoteTokenMint: PublicKey,
-      isDelegated: boolean,
+      isDelegated?: boolean,
     }) => {
+      console.log('isDelegated: ', isDelegated);
       if (isDelegated) {
         // Use ER provider
         let tx = await program.methods
@@ -307,23 +308,5 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
     delegateOrderbookMutation,
     undelegateOrderbookMutation,
     matchOrderMutation,
-  }
-}
-
-async function fetchOrderbookFallback(orderBookAddress: PublicKey) {
-  // Try ER first
-  try {
-    const erOrderbook = await erProvider.program.account.orderbook.fetch(orderBookAddress);
-    if (erOrderbook) return { orderbook: erOrderbook, source: 'er' };
-  } catch (e) {
-    // Ignore and try devnet
-  }
-  // Fallback to devnet
-  try {
-    const devnetOrderbook = await program.account.orderbook.fetch(orderBookAddress);
-    if (devnetOrderbook) return { orderbook: devnetOrderbook, source: 'devnet' };
-  } catch (e) {
-    // Both failed
-    throw new Error('Orderbook not found on ER or devnet');
   }
 }
