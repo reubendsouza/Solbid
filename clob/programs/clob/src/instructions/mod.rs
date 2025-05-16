@@ -21,3 +21,6 @@ pub use delegate::*;
 
 pub mod undelegate;
 pub use undelegate::*;
+
+pub mod update_delegation_status;
+pub use update_delegation_status::*;

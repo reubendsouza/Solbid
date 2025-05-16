@@ -22,14 +22,16 @@ pub struct DepositBalance<'info> {
     )]
     pub order_book: Account<'info, Orderbook>,
 
-    #[account(mut,
+    #[account(init_if_needed,
+        payer = user,
         associated_token::mint = base_token_mint,
         associated_token::authority = user,
         associated_token::token_program = token_program,
         )]
     pub user_base_account: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(mut,
+    #[account(init_if_needed,
+        payer = user,
         associated_token::mint = quote_token_mint,
         associated_token::authority = user,
         associated_token::token_program = token_program,

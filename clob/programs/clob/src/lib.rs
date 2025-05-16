@@ -46,4 +46,8 @@ pub mod clob {
     pub fn undelegate(ctx: Context<UndelegateOrderbook>) -> Result<()> {
         undelegate::handle_undelegate(ctx)
     }
+
+    pub fn update_delegation_status(ctx: Context<UpdateDelegationStatus>, is_delegated: bool) -> Result<()> {
+        update_delegation_status::handle_update_delegation_status(ctx, is_delegated)
+    }
 }

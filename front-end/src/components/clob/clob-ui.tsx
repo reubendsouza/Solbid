@@ -238,6 +238,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
   const handleCreateOrder = async () => {
     if (!baseTokenMint || !quoteTokenMint) return
 
+    console.log('createOrderMutation start: ', createOrderMutation);
     await createOrderMutation.mutateAsync({
       side,
       price: parseFloat(price),
@@ -246,6 +247,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       quoteTokenMint,
     })
 
+    console.log('createOrderMutation end: ', createOrderMutation);
     // After order is created, try to find the new order and match it
     // Wait for orderbookQuery to refetch (it is refetched on createOrderMutation success)
     setTimeout(() => {
@@ -259,11 +261,13 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const latestOrder = myOrders.reduce((a: any, b: any) => (a.timestamp > b.timestamp ? a : b))
       if (latestOrder && latestOrder.id) {
+        console.log('matchOrderMutation start: ', matchOrderMutation);
         matchOrderMutation.mutateAsync({
           orderId: latestOrder.id.toNumber(),
           baseTokenMint,
           quoteTokenMint,
         })
+        console.log('matchOrderMutation end: ', matchOrderMutation);
       }
     }, 1000) // Wait 1s for orderbookQuery to update (tweak as needed)
   }

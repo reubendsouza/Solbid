@@ -20,6 +20,7 @@ pub struct Orderbook {
     #[max_len(20, UserBalance)]
     pub user_balances: Vec<UserBalance>,
     pub bump: u8,
+    pub is_delegated: bool,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, InitSpace)]

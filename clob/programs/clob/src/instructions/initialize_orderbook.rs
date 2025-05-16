@@ -13,7 +13,7 @@ pub struct InitializeOrderbook<'info> {
     pub base_token_mint: InterfaceAccount<'info, Mint>,
     pub quote_token_mint: InterfaceAccount<'info, Mint>,
 
-    #[account(init,
+    #[account(init_if_needed,
         payer = payer,
         associated_token::mint = base_token_mint,
         associated_token::authority = order_book,
@@ -21,7 +21,7 @@ pub struct InitializeOrderbook<'info> {
         )]
     pub base_vault: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(init,
+    #[account(init_if_needed,
         payer = payer,
         associated_token::mint = quote_token_mint,
         associated_token::authority = order_book,
@@ -29,7 +29,7 @@ pub struct InitializeOrderbook<'info> {
         )]
     pub quote_vault: InterfaceAccount<'info, TokenAccount>,
     
-    #[account(init,
+    #[account(init_if_needed,
         payer = payer,
         space = 8 + Orderbook::INIT_SPACE,
         seeds = [b"orderbook",base_token_mint.key().as_ref(),quote_token_mint.key().as_ref()],
@@ -42,6 +42,16 @@ pub struct InitializeOrderbook<'info> {
 }
 
 pub fn init_orderbook(context: Context<InitializeOrderbook>) -> Result<()> {
+    msg!("Initializing orderbook");
+    msg!("Base token mint: {}", context.accounts.base_token_mint.key());
+    msg!("Quote token mint: {}", context.accounts.quote_token_mint.key());  
+    msg!("Base vault: {}", context.accounts.base_vault.key());
+    msg!("Quote vault: {}", context.accounts.quote_vault.key());    
+    msg!("Order book: {}", context.accounts.order_book.key());
+    msg!("Payer: {}", context.accounts.payer.key());
+    msg!("Associated token program: {}", context.accounts.associated_token_program.key());
+    msg!("Token program: {}", context.accounts.token_program.key());
+    msg!("System program: {}", context.accounts.system_program.key());
     context.accounts.order_book.set_inner(Orderbook {
         base_asset: context.accounts.base_token_mint.key(),
         quote_asset: context.accounts.quote_token_mint.key(),
@@ -55,6 +65,7 @@ pub fn init_orderbook(context: Context<InitializeOrderbook>) -> Result<()> {
         order_counter: 0,
         bump: context.bumps.order_book,
         user_balances: Vec::with_capacity(20),
+        is_delegated: false,
     });
     Ok(())
 }
