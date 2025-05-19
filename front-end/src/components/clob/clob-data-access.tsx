@@ -83,10 +83,19 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
   const { program, orderBooks } = useClobProgram()
   const provider = useAnchorProvider()
   console.log('orderBooks: ', orderBooks);
-  const orderbookQuery = useQuery({
+  const devnetOrderbookQuery = useQuery({
     queryKey: ['clob', 'fetch', { cluster, orderBookAddress }],
     queryFn: () => program.account.orderbook.fetch(orderBookAddress),
   })
+
+  const magicOrderbookQuery = useQuery({
+    queryKey: ['clob', 'fetch', { magicCluster, orderBookAddress }],
+    queryFn: () => program.account.orderbook.fetch(orderBookAddress),
+    enabled: !devnetOrderbookQuery.data && !!program && !!orderBookAddress,
+  })
+
+  // Use whichever has data, or fallback as needed
+  const orderbookQuery = devnetOrderbookQuery.data ? devnetOrderbookQuery : magicOrderbookQuery
 
   // Example: create an ER provider (adjust endpoint and wallet as needed)
   const ER_RPC_URL = 'https://devnet.magicblock.app'
@@ -300,6 +309,47 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
     onError: () => toast.error('Failed to match order'),
   })
 
+  const updateDelegationStatusMutation = useMutation({
+    mutationKey: ['clob', 'update-delegation-status', { cluster, orderBookAddress }],
+    mutationFn: async ({ 
+      isDelegated, 
+      baseTokenMint, 
+      quoteTokenMint,
+    }: { 
+      isDelegated: boolean,
+      baseTokenMint: PublicKey,
+      quoteTokenMint: PublicKey,
+    }) => {
+     
+      let tx = await program.methods
+        .updateDelegationStatus(isDelegated)
+        .accounts({
+          user: erProvider.wallet.publicKey,
+          baseTokenMint,
+          quoteTokenMint,
+        })
+        .transaction();
+
+      tx.feePayer = erProvider.wallet.publicKey;
+      tx.recentBlockhash = (await erProvider.connection.getLatestBlockhash()).blockhash;
+      tx = await erProvider.wallet.signTransaction(tx);
+      const txHash = await erProvider.sendAndConfirm(tx, [], {
+        skipPreflight: true,
+        commitment: "confirmed",
+      });
+      return txHash;
+      
+    },
+    onSuccess: (tx) => {
+      transactionToast(tx)
+      return orderbookQuery.refetch()
+    },
+    onError: (error) => {
+      console.error('Failed to update delegation status:', error)
+      toast.error('Failed to update delegation status')
+    },
+  })
+
   return {
     orderbookQuery,
     createOrderMutation,
@@ -308,5 +358,6 @@ export function useClobOrderbook({ orderBookAddress }: { orderBookAddress: Publi
     delegateOrderbookMutation,
     undelegateOrderbookMutation,
     matchOrderMutation,
+    updateDelegationStatusMutation,
   }
 }

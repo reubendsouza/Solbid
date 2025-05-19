@@ -938,6 +938,68 @@
       "args": []
     },
     {
+      "name": "update_delegation_status",
+      "discriminator": [
+        226,
+        172,
+        81,
+        247,
+        42,
+        229,
+        253,
+        65
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "base_token_mint"
+        },
+        {
+          "name": "quote_token_mint"
+        },
+        {
+          "name": "order_book",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  98,
+                  111,
+                  111,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "base_token_mint"
+              },
+              {
+                "kind": "account",
+                "path": "quote_token_mint"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "is_delegated",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "withdraw_funds",
       "discriminator": [
         241,
@@ -1313,6 +1375,11 @@
       "code": 6010,
       "name": "InsufficientBalance",
       "msg": "Insufficient balance"
+    },
+    {
+      "code": 6011,
+      "name": "Unauthorized",
+      "msg": "Operation not authorized"
     }
   ],
   "types": [
@@ -1426,6 +1493,10 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "is_delegated",
+            "type": "bool"
           }
         ]
       }

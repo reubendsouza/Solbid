@@ -34,4 +34,7 @@ pub enum ErrorCode {
     
     #[msg("Insufficient balance")]
     InsufficientBalance,
+
+    #[msg("Operation not authorized")]
+    Unauthorized
 }

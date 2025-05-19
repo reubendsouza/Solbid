@@ -209,7 +209,7 @@ export function ClobOrderbookList() {
 }
 
 export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: PublicKey }) {
-  const { orderbookQuery, createOrderMutation, depositBalanceMutation, withdrawFundsMutation, matchOrderMutation, delegateOrderbookMutation, undelegateOrderbookMutation } = useClobOrderbook({
+  const { orderbookQuery, createOrderMutation, depositBalanceMutation, withdrawFundsMutation, matchOrderMutation, delegateOrderbookMutation, undelegateOrderbookMutation, updateDelegationStatusMutation } = useClobOrderbook({
     orderBookAddress: new PublicKey(orderBookAddress),
   })
   const [side, setSide] = useState<number>(0) // 0 for buy, 1 for sell
@@ -250,7 +250,7 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
       amount: parseFloat(amount),
       baseTokenMint,
       quoteTokenMint,
-      isDelegated: true,
+      isDelegated
     })
 
     console.log('createOrderMutation end: ', createOrderMutation);
@@ -305,15 +305,25 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
     if (!baseTokenMint || !quoteTokenMint) return
     try {
       await delegateOrderbookMutation.mutateAsync({ baseTokenMint, quoteTokenMint })
-      // await updateDelegationStatusMutation.mutateAsync({
-      //   isDelegated: true,
-      //   baseTokenMint,
-      //   quoteTokenMint,
-      // })
       setIsDelegated(true)
     } catch (error) {
       // Error handling is already in the mutation
       console.error('Error delegating orderbook: ', error)
+    }
+  }
+
+  // New handler for loading delegation status
+  const handleLoadDelegationStatus = async () => {
+    if (!baseTokenMint || !quoteTokenMint) return
+    try {
+      await updateDelegationStatusMutation.mutateAsync({
+        isDelegated: true, // or fetch actual status if needed
+        baseTokenMint,
+        quoteTokenMint,
+      })
+      setIsDelegated(true)
+    } catch (error) {
+      console.error('Error loading delegation status: ', error)
     }
   }
 
@@ -430,6 +440,19 @@ export function ClobOrderbookDetail({ orderBookAddress }: { orderBookAddress: Pu
             }
           >
             {delegateOrderbookMutation.isPending ? 'Delegating...' : 'Delegate to Rollup'}
+          </Button>
+          {/* Load Delegation Status Button */}
+          <Button
+            variant="outline"
+            className="w-full mt-2"
+            onClick={handleLoadDelegationStatus}
+            disabled={
+              // updateDelegationStatusMutation.isPending ||
+              !baseTokenMint ||
+              !quoteTokenMint
+            }
+          >
+            {updateDelegationStatusMutation.isPending ? 'Loading...' : 'Load Delegation'}
           </Button>
           {/* Undelegate from Rollup Button */}
           <Button

@@ -944,6 +944,68 @@ export type Clob = {
       "args": []
     },
     {
+      "name": "updateDelegationStatus",
+      "discriminator": [
+        226,
+        172,
+        81,
+        247,
+        42,
+        229,
+        253,
+        65
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "baseTokenMint"
+        },
+        {
+          "name": "quoteTokenMint"
+        },
+        {
+          "name": "orderBook",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  100,
+                  101,
+                  114,
+                  98,
+                  111,
+                  111,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "baseTokenMint"
+              },
+              {
+                "kind": "account",
+                "path": "quoteTokenMint"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "isDelegated",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "withdrawFunds",
       "discriminator": [
         241,
@@ -1319,6 +1381,11 @@ export type Clob = {
       "code": 6010,
       "name": "insufficientBalance",
       "msg": "Insufficient balance"
+    },
+    {
+      "code": 6011,
+      "name": "unauthorized",
+      "msg": "Operation not authorized"
     }
   ],
   "types": [
@@ -1432,6 +1499,10 @@ export type Clob = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "isDelegated",
+            "type": "bool"
           }
         ]
       }
