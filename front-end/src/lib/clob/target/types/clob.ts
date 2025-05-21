@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/clob.json`.
  */
 export type Clob = {
-  "address": "J5VexPAVTNy3pPX4WkGj3xwtitEMPKvSSVGbBas3Mv6X",
+  "address": "EBRUiZStSVz98fpJ9PsG3BTFBtETEXWsw9bPwsaUrkJF",
   "metadata": {
     "name": "clob",
     "version": "0.1.0",
@@ -135,38 +135,38 @@ export type Clob = {
             "program": {
               "kind": "const",
               "value": [
-                253,
-                189,
-                102,
+                195,
+                211,
+                106,
+                84,
+                109,
+                148,
+                69,
+                7,
+                167,
+                217,
+                73,
+                219,
+                6,
+                56,
+                104,
+                243,
+                98,
+                158,
+                45,
+                217,
+                7,
+                116,
+                2,
+                7,
+                234,
+                222,
+                33,
+                215,
+                240,
+                213,
                 142,
-                115,
-                68,
-                173,
-                83,
-                147,
-                115,
-                133,
-                186,
-                135,
-                17,
-                233,
-                137,
-                201,
-                226,
-                43,
-                4,
-                99,
-                29,
-                91,
-                131,
-                187,
-                10,
-                96,
-                71,
-                48,
-                3,
-                63,
-                116
+                108
               ]
             }
           }
@@ -274,7 +274,7 @@ export type Clob = {
         },
         {
           "name": "ownerProgram",
-          "address": "J5VexPAVTNy3pPX4WkGj3xwtitEMPKvSSVGbBas3Mv6X"
+          "address": "EBRUiZStSVz98fpJ9PsG3BTFBtETEXWsw9bPwsaUrkJF"
         },
         {
           "name": "delegationProgram",

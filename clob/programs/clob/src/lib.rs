@@ -12,7 +12,7 @@ pub use state::*;
 use ephemeral_rollups_sdk::anchor::ephemeral;
 
 
-declare_id!("J5VexPAVTNy3pPX4WkGj3xwtitEMPKvSSVGbBas3Mv6X");
+declare_id!("EBRUiZStSVz98fpJ9PsG3BTFBtETEXWsw9bPwsaUrkJF");
 
 #[ephemeral]
 #[program]
